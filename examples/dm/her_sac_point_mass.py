@@ -1,5 +1,7 @@
 import gym
 
+from rlkit.envs.dm import DMGoalPointMassEnv
+
 import rlkit.torch.pytorch_util as ptu
 from rlkit.data_management.obs_dict_replay_buffer import ObsDictRelabelingBuffer
 from rlkit.launchers.launcher_util import setup_logger
@@ -9,11 +11,12 @@ from rlkit.torch.networks import FlattenMlp
 from rlkit.torch.sac.policies import MakeDeterministic, TanhGaussianPolicy
 from rlkit.torch.sac.sac import SACTrainer
 from rlkit.torch.torch_rl_algorithm import TorchBatchRLAlgorithm
+from rlkit.envs.wrappers import NormalizedBoxEnv
 
 
 def experiment(variant):
-    eval_env = gym.make('FetchReach-v1')
-    expl_env = gym.make('FetchReach-v1')
+    eval_env = NormalizedBoxEnv(DMGoalPointMassEnv(max_steps=variant['algo_kwargs']['max_path_length']))
+    expl_env = NormalizedBoxEnv(DMGoalPointMassEnv(max_steps=variant['algo_kwargs']['max_path_length']))
 
     observation_key = 'observation'
     desired_goal_key = 'desired_goal'
@@ -97,19 +100,19 @@ if __name__ == "__main__":
         version='normal',
         algo_kwargs=dict(
             batch_size=128,
-            num_epochs=100,
-            num_eval_steps_per_epoch=5000,
+            num_epochs=1000,
+            num_eval_steps_per_epoch=1000,
             num_expl_steps_per_train_loop=1000,
             num_trains_per_train_loop=1000,
             min_num_steps_before_training=1000,
-            max_path_length=50,
+            max_path_length=500,
         ),
         sac_trainer_kwargs=dict(
             discount=0.99,
             soft_target_tau=5e-3,
             target_update_period=1,
             policy_lr=3E-4,
-            qf_lr=3E-4,
+            qf_lr=3E-3,
             reward_scale=1,
             use_automatic_entropy_tuning=True,
         ),
@@ -125,6 +128,6 @@ if __name__ == "__main__":
             hidden_sizes=[400, 300],
         ),
     )
-    ptu.set_gpu_mode(True,gpu_id=3)  # optionally set the GPU (default=False)
-    setup_logger('her-sac-fetch-0', variant=variant)
+    setup_logger('her-dm-pm-sac-5-500', variant=variant)
+    ptu.set_gpu_mode(True,gpu_id=2)  # optionally set the GPU (default=False)
     experiment(variant)

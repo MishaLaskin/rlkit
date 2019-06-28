@@ -141,5 +141,6 @@ if __name__ == "__main__":
             hidden_sizes=[400, 300],
         ),
     )
-    setup_logger('her-td3-sawyer-experiment', variant=variant)
+    ptu.set_gpu_mode(True,gpu_id=4)  # optionally set the GPU (default=False)
+    setup_logger('her-td3-sawyer-hand-success', variant=variant)
     experiment(variant)

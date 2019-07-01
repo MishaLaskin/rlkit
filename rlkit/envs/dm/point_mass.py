@@ -1,6 +1,11 @@
 from dm_control import suite
 import numpy as np
 from gym.spaces import Box, Dict
+import os
+import torch
+from vqvae.models.vqvae import VQVAE
+import time
+from sys import getsizeof
 
 
 class DMPointMassEnv:
@@ -9,7 +14,7 @@ class DMPointMassEnv:
                  env_name='point_mass',
                  reward_type='dense',
                  indicator_threshold=0.06,
-                 mode='easy',
+                 mode='easy_big',
                  max_steps=100
                  ):
 
@@ -150,6 +155,266 @@ class DMGoalPointMassEnv(DMPointMassEnv):
         obs = super().reset()
         goal_obs = self._obs_to_goal_obs(obs)
         return goal_obs
+
+
+class DMImageGoalPointMassEnv(DMPointMassEnv):
+
+    def __init__(self,
+                 reward_type='sparse',
+                 img_dim=32,
+                 num_channels=3,
+                 fixed_goal=True,
+                 **kwargs):
+
+        DMPointMassEnv.__init__(self, reward_type=reward_type, **kwargs)
+        self.img_dim = img_dim
+        self.num_channels = num_channels
+
+        self.fixed_goal = fixed_goal
+
+        self.flat_obs_space = Box(low=-5.0, high=5.0, shape=(
+            np.sum([x.shape for x in self.obs_spec.values()]),), dtype=np.float32)
+        self.goal_space = Box(low=-5.0, high=5.0, shape=(3,), dtype=np.float32)
+        self.image_space = Box(low=0, high=255, shape=(
+            self.img_dim, self.img_dim, self.num_channels))
+
+        self.observation_space = Dict([
+            ('observation', self.flat_obs_space),
+            ('desired_goal', self.goal_space),
+            ('achieved_goal', self.goal_space),
+            ('state_observation', self.flat_obs_space),
+            ('state_desired_goal', self.goal_space),
+            ('state_achieved_goal', self.goal_space),
+            ('image_desired_goal', self.image_space),
+            ('image_achieved_goal', self.image_space),
+        ])
+
+    def _obs_to_goal_obs(self, obs):
+        achieved_goal, desired_goal = self._get_pointmass_and_target_pos()
+        achieved_goal_image = self._get_achived_goal_img()
+
+        goal_obs = {
+            "observation": obs,
+            "desired_goal": desired_goal,
+            "achieved_goal": achieved_goal,
+            "state_observation": obs,
+            "state_desired_goal": desired_goal,
+            "state_achieved_goal": achieved_goal,
+            "image_desired_goal": self.desired_goal_image,
+            "image_achieved_goal": achieved_goal_image,
+        }
+        return goal_obs
+
+    def _get_pointmass_and_target_pos(self):
+        target_pos = self.dm_env.physics.named.data.geom_xpos['target']
+        pm_pos = self.dm_env.physics.named.data.geom_xpos['pointmass']
+        return pm_pos, target_pos
+
+    def step(self, action, debug=False):
+        if debug:
+            start = time.time()
+
+        obs_next, reward, done, info = super().step(action)
+        goal_obs_next = self._obs_to_goal_obs(obs_next)
+
+        if debug:
+            print('Time per step', time.time()-start)
+            print('Size of obs obj', getsizeof(goal_obs_next))
+
+        return goal_obs_next, reward, done, info
+
+    def reset(self):
+        if self.fixed_goal:
+            # resets env, sets env to goal state, and gets image
+            self.desired_goal_image = self._set_fixed_goal_img()
+        else:
+            self.desired_goal_image = self._set_random_goal_img()
+        # resets again to overwrite current state (which is the goal state)
+        obs = super().reset()
+        goal_obs = self._obs_to_goal_obs(obs)
+        return goal_obs
+
+    def _get_achived_goal_img(self):
+        return super().render(self.img_dim, self.img_dim)
+
+    def _set_fixed_goal_img(self):
+
+        super().reset()
+        _, desired_goal = self._get_pointmass_and_target_pos()
+        # some small amount of noise to generate realistic goal
+        # scenarios
+        noise = np.random.randn(3)*0.015
+        noise[-1] = 0.0
+        # sets goal state
+        self.dm_env.physics.named.data.geom_xpos['pointmass'] = desired_goal + noise
+        goal_img = self.render(self.img_dim, self.img_dim)
+
+        return goal_img
+
+    def _set_random_goal_img(self):
+        raise NotImplementedError('Only fixed goals have been implemented')
+
+
+class DMImageGoalPointMassEnvWithVQVAE(DMImageGoalPointMassEnv):
+
+    def __init__(self, model_filename=None, model_dir=None, **kwargs):
+
+        DMImageGoalPointMassEnv.__init__(self, **kwargs)
+
+        if model_filename is None:
+            raise ValueError(
+                'Must supply a valid path to VQVAE model .pth file')
+
+        self.device = torch.device(
+            "cuda" if torch.cuda.is_available() else "cpu")
+        self.model, self.model_params = self._load_model(
+            model_filename, model_dir)
+
+    def _load_model(self, model_filename, model_dir=None):
+        # if running from the VQ VAE folder, you can set model_dir = None
+        path = os.getcwd() + '/results/' if model_dir is None else model_dir
+
+        if torch.cuda.is_available():
+            data = torch.load(path + model_filename)
+        else:
+            data = torch.load(path+model_filename,
+                              map_location=lambda storage, loc: storage)
+
+        params = data["hyperparameters"]
+
+        model = VQVAE(params['n_hiddens'], params['n_residual_hiddens'],
+                      params['n_residual_layers'], params['n_embeddings'],
+                      params['embedding_dim'], params['beta']).to(self.device)
+
+        model.load_state_dict(data['model'])
+
+        return model, params
+
+    def _obs_to_goal_obs(self, obs, debug=False):
+
+        achieved_goal, desired_goal = self._get_pointmass_and_target_pos()
+        achieved_goal_image = self._get_achived_goal_img()
+
+        # encode into a representation hash
+        achieved_rep_state = self._encode_image(achieved_goal_image)
+        #
+
+        goal_obs = {
+            "observation": obs,
+            "desired_goal": desired_goal,
+            "achieved_goal": achieved_goal,
+            "state_observation": obs,
+            "state_desired_goal": self.desired_rep_state,
+            "state_achieved_goal": achieved_rep_state,
+            "image_desired_goal": self.desired_goal_image,
+            "image_achieved_goal": achieved_goal_image,
+        }
+
+        return goal_obs
+
+    def reset(self):
+        if self.fixed_goal:
+            # resets env, sets env to goal state, and gets image
+            self.desired_goal_image = self._set_fixed_goal_img()
+            self.desired_rep_state = self._encode_image(
+                self.desired_goal_image)
+        else:
+            self.desired_goal_image = self._set_random_goal_img()
+        # resets again to overwrite current state (which is the goal state)
+        obs = super().reset()
+        goal_obs = self._obs_to_goal_obs(obs)
+        return goal_obs
+
+    def _encode_image(self, img):
+        img = np.array([img]).transpose(0, 3, 1, 2)
+        img = torch.tensor(img).float()
+        img = img.to(self.device)
+        vq_encoder_output = self.model.pre_quantization_conv(
+            self.model.encoder(img))
+        _, _, _, _, e_indices = self.model.vector_quantization(
+            vq_encoder_output)
+        return e_indices.cpu().detach().numpy().squeeze()
+
+
+class DMImageGoalPointMassEnvWithVQVAE(DMImageGoalPointMassEnv):
+
+    def __init__(self, model_filename=None, model_dir=None, **kwargs):
+
+        DMImageGoalPointMassEnv.__init__(self, **kwargs)
+
+        if model_filename is None:
+            raise ValueError(
+                'Must supply a valid path to VQVAE model .pth file')
+
+        self.device = torch.device(
+            "cuda" if torch.cuda.is_available() else "cpu")
+        self.model, self.model_params = self._load_model(
+            model_filename, model_dir)
+
+    def _load_model(self, model_filename, model_dir=None):
+        # if running from the VQ VAE folder, you can set model_dir = None
+        path = os.getcwd() + '/results/' if model_dir is None else model_dir
+
+        if torch.cuda.is_available():
+            data = torch.load(path + model_filename)
+        else:
+            data = torch.load(path+model_filename,
+                              map_location=lambda storage, loc: storage)
+
+        params = data["hyperparameters"]
+
+        model = VQVAE(params['n_hiddens'], params['n_residual_hiddens'],
+                      params['n_residual_layers'], params['n_embeddings'],
+                      params['embedding_dim'], params['beta']).to(self.device)
+
+        model.load_state_dict(data['model'])
+
+        return model, params
+
+    def _obs_to_goal_obs(self, obs, debug=False):
+
+        achieved_goal, desired_goal = self._get_pointmass_and_target_pos()
+        achieved_goal_image = self._get_achived_goal_img()
+
+        # encode into a representation hash
+        achieved_rep_state = self._encode_image(achieved_goal_image)
+        #
+
+        goal_obs = {
+            "observation": obs,
+            "desired_goal": desired_goal,
+            "achieved_goal": achieved_goal,
+            "state_observation": obs,
+            "state_desired_goal": self.desired_rep_state,
+            "state_achieved_goal": achieved_rep_state,
+            "image_desired_goal": self.desired_goal_image,
+            "image_achieved_goal": achieved_goal_image,
+        }
+
+        return goal_obs
+
+    def reset(self):
+        if self.fixed_goal:
+            # resets env, sets env to goal state, and gets image
+            self.desired_goal_image = self._set_fixed_goal_img()
+            self.desired_rep_state = self._encode_image(
+                self.desired_goal_image)
+        else:
+            self.desired_goal_image = self._set_random_goal_img()
+        # resets again to overwrite current state (which is the goal state)
+        obs = super().reset()
+        goal_obs = self._obs_to_goal_obs(obs)
+        return goal_obs
+
+    def _encode_image(self, img):
+        img = np.array([img]).transpose(0, 3, 1, 2)
+        img = torch.tensor(img).float()
+        img = img.to(self.device)
+        vq_encoder_output = self.model.pre_quantization_conv(
+            self.model.encoder(img))
+        _, _, _, _, e_indices = self.model.vector_quantization(
+            vq_encoder_output)
+        return e_indices.cpu().detach().numpy().squeeze()
 
 
 if __name__ == "__main__":

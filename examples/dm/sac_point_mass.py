@@ -1,4 +1,3 @@
-from gym.envs.mujoco import HalfCheetahEnv
 
 import rlkit.torch.pytorch_util as ptu
 from rlkit.data_management.env_replay_buffer import EnvReplayBuffer
@@ -14,8 +13,10 @@ from rlkit.envs.dm import DMPointMassEnv
 
 
 def experiment(variant):
-    eval_env = NormalizedBoxEnv(DMPointMassEnv(max_steps=variant['algorithm_kwargs']['max_path_length']))
-    expl_env = NormalizedBoxEnv(DMPointMassEnv(max_steps=variant['algorithm_kwargs']['max_path_length']))
+    eval_env = NormalizedBoxEnv(DMPointMassEnv(
+        max_steps=variant['algorithm_kwargs']['max_path_length']))
+    expl_env = NormalizedBoxEnv(DMPointMassEnv(
+        max_steps=variant['algorithm_kwargs']['max_path_length']))
     obs_dim = expl_env.observation_space.low.size
     action_dim = eval_env.action_space.low.size
 
@@ -80,8 +81,6 @@ def experiment(variant):
     algorithm.train()
 
 
-
-
 if __name__ == "__main__":
     # noinspection PyTypeChecker
     variant = dict(
@@ -109,5 +108,5 @@ if __name__ == "__main__":
         ),
     )
     setup_logger('dm-pm-sac-15', variant=variant)
-    ptu.set_gpu_mode(True,gpu_id=2)  # optionally set the GPU (default=False)
+    ptu.set_gpu_mode(True, gpu_id=0)  # optionally set the GPU (default=False)
     experiment(variant)

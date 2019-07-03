@@ -30,6 +30,7 @@ class TanhGaussianPolicy(Mlp, ExplorationPolicy):
     If return_log_prob is False (default), log_prob = None
         This is done because computing the log_prob can be a bit expensive.
     """
+
     def __init__(
             self,
             hidden_sizes,

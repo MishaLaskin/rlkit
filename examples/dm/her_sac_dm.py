@@ -1,6 +1,5 @@
 import gym
 
-from rlkit.envs.dm import DMGoalPointMassEnv
 
 import rlkit.torch.pytorch_util as ptu
 from rlkit.data_management.obs_dict_replay_buffer import ObsDictRelabelingBuffer
@@ -12,13 +11,19 @@ from rlkit.torch.sac.policies import MakeDeterministic, TanhGaussianPolicy
 from rlkit.torch.sac.sac import SACTrainer
 from rlkit.torch.torch_rl_algorithm import TorchBatchRLAlgorithm
 from rlkit.envs.wrappers import NormalizedBoxEnv
+from rlkit.envs.dm import DMGoalPointMassEnv
+
+from vqvae.envs.pointmass import GoalPointmass
+
+from vqvae.envs.pointmass import GoalPointmass, GoalPointmassVQVAE
+MODEL_PATH = '/home/misha/research/vqvae/results/vqvae_temporal_data_long_ne8nd2.pth'
 
 
 def experiment(variant):
-    eval_env = NormalizedBoxEnv(DMGoalPointMassEnv(mode='easy_big',
-                                                   max_steps=variant['algo_kwargs']['max_path_length']))
-    expl_env = NormalizedBoxEnv(DMGoalPointMassEnv(mode='easy_big',
-                                                   max_steps=variant['algo_kwargs']['max_path_length']))
+    eval_env = GoalPointmassVQVAE(threshold=0.1, obs_dim=128, goal_dim=128, model_path=MODEL_PATH, reward_type='sparse',
+                                  max_steps=variant['algo_kwargs']['max_path_length'])
+    expl_env = GoalPointmassVQVAE(threshold=0.1, obs_dim=128, goal_dim=128, model_path=MODEL_PATH, reward_type='sparse',
+                                  max_steps=variant['algo_kwargs']['max_path_length'])
 
     observation_key = 'observation'
     desired_goal_key = 'desired_goal'
@@ -97,8 +102,11 @@ def experiment(variant):
 
 if __name__ == "__main__":
     variant = dict(
-        algorithm='HER-SAC',
+        algorithm='HER-SAC-VQVAE',
         version='normal',
+        env_name='pm',
+        title='jul16',
+        save=True,
         algo_kwargs=dict(
             batch_size=128,
             num_epochs=1000,
@@ -129,6 +137,12 @@ if __name__ == "__main__":
             hidden_sizes=[400, 300],
         ),
     )
-    setup_logger('her-dm-pm-sac-1-test', variant=variant)
+
+    def get_name(v):
+        name = '_'.join([v['env_name'], v['algorithm'], v['title']])
+        return name
+    if variant['save']:
+        name = get_name(variant)
+        setup_logger(name, variant=variant)
     ptu.set_gpu_mode(True, gpu_id=0)  # optionally set the GPU (default=False)
     experiment(variant)

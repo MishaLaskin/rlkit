@@ -156,6 +156,18 @@ class DMGoalPointMassEnv(DMPointMassEnv):
         goal_obs = self._obs_to_goal_obs(obs)
         return goal_obs
 
+    def compute_rewards(self,action,obs):
+        print(obs)
+        distance = np.linalg.norm(obs['achieved_goal']-obs['desired_goal'],axis=1)
+        rewards = np.zeros_like(distance,).astype(float)
+        rewards[distance>self.indicator_threshold] = -1.0
+        print(distance)
+        print(rewards)
+        assert False 
+        #return 0.0 if distance < self.indicator_threshold else -1.0
+
+
+
 
 class DMImageGoalPointMassEnv(DMPointMassEnv):
 
@@ -250,6 +262,8 @@ class DMImageGoalPointMassEnv(DMPointMassEnv):
         goal_img = self.render(self.img_dim, self.img_dim)
 
         return goal_img
+
+    
 
     def _set_random_goal_img(self):
         raise NotImplementedError('Only fixed goals have been implemented')

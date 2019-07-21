@@ -13,17 +13,34 @@ from rlkit.torch.torch_rl_algorithm import TorchBatchRLAlgorithm
 from rlkit.envs.wrappers import NormalizedBoxEnv
 from rlkit.envs.dm import DMGoalPointMassEnv
 
-from vqvae.envs.pointmass import GoalPointmass
-
 from vqvae.envs.pointmass import GoalPointmass, GoalPointmassVQVAE
+
+from vqvae.envs.reacher import GoalReacher
+from vqvae.envs.reacher import GoalReacherVQVAE, GoalReacherNoTargetVQVAE
+from vqvae.envs.pusher import GoalPusher
+
 MODEL_PATH = '/home/misha/research/vqvae/results/vqvae_temporal_data_long_ne8nd2.pth'
+MODEL_PATH = '/home/misha/research/vqvae/results/vqvae_data_reacher_no_target_jul17_ne8nd2.pth'
 
 
 def experiment(variant):
-    eval_env = GoalPointmassVQVAE(threshold=0.1, obs_dim=128, goal_dim=128, model_path=MODEL_PATH, reward_type='sparse',
+    """
+    eval_env = GoalPointmassVQVAE(threshold=0.15, obs_dim=128, goal_dim=128, model_path=MODEL_PATH, reward_type='sparse_exploration',
                                   max_steps=variant['algo_kwargs']['max_path_length'])
-    expl_env = GoalPointmassVQVAE(threshold=0.1, obs_dim=128, goal_dim=128, model_path=MODEL_PATH, reward_type='sparse',
+    expl_env = GoalPointmassVQVAE(threshold=0.15, obs_dim=128, goal_dim=128, model_path=MODEL_PATH, reward_type='sparse_exploration',
                                   max_steps=variant['algo_kwargs']['max_path_length'])
+
+    eval_env = GoalReacherNoTargetVQVAE(threshold=0.2, obs_dim=128, goal_dim=128, model_path=MODEL_PATH, reward_type='sparse',
+                                        max_steps=variant['algo_kwargs']['max_path_length'])
+
+    expl_env = GoalReacherNoTargetVQVAE(threshold=0.2, obs_dim=128, goal_dim=128, model_path=MODEL_PATH, reward_type='sparse',
+                                        max_steps=variant['algo_kwargs']['max_path_length'])
+    """
+
+    eval_env = GoalPusher(threshold=0.05, reward_type='sparse',
+                          max_steps=variant['algo_kwargs']['max_path_length'])
+    expl_env = GoalPusher(threshold=0.05, reward_type='sparse',
+                          max_steps=variant['algo_kwargs']['max_path_length'])
 
     observation_key = 'observation'
     desired_goal_key = 'desired_goal'
@@ -102,14 +119,14 @@ def experiment(variant):
 
 if __name__ == "__main__":
     variant = dict(
-        algorithm='HER-SAC-VQVAE',
+        algorithm='SAC-HER-VQVAE',
         version='normal',
-        env_name='pm',
-        title='jul16',
+        env_name='goal_pusher',
+        title='jul20',
         save=True,
         algo_kwargs=dict(
             batch_size=128,
-            num_epochs=1000,
+            num_epochs=10000,
             num_eval_steps_per_epoch=1000,
             num_expl_steps_per_train_loop=1000,
             num_trains_per_train_loop=1000,
@@ -127,7 +144,7 @@ if __name__ == "__main__":
         ),
         replay_buffer_kwargs=dict(
             max_size=int(1E6),
-            fraction_goals_rollout_goals=0.2,  # equal to k = 4 in HER paper
+            fraction_goals_rollout_goals=0.2,
             fraction_goals_env_goals=0,
         ),
         qf_kwargs=dict(
@@ -144,5 +161,6 @@ if __name__ == "__main__":
     if variant['save']:
         name = get_name(variant)
         setup_logger(name, variant=variant)
-    ptu.set_gpu_mode(True, gpu_id=0)  # optionally set the GPU (default=False)
+    # optionally set the GPU (default=False)
+    ptu.set_gpu_mode(True, gpu_id=0)
     experiment(variant)

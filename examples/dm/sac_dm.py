@@ -12,13 +12,21 @@ from rlkit.envs.dm import DMPointMassEnv
 from vqvae.envs.reacher import EasyReacher
 from vqvae.envs.manipulator import EasyManipulator
 from vqvae.envs.pointmass import EasyPointmass, EasyPointmassVQVAE
+from vqvae.envs.pusher import EasyPusher
 
 
 def experiment(variant):
-    eval_env = EasyPointmassVQVAE(obs_dim=192, rep_type='mixed',
-                                  max_steps=variant['algorithm_kwargs']['max_path_length'])
-    expl_env = EasyPointmassVQVAE(obs_dim=192, rep_type='mixed',
-                                  max_steps=variant['algorithm_kwargs']['max_path_length'])
+    # eval_env = EasyPointmassVQVAE(obs_dim=192, rep_type='mixed',
+    #                              max_steps=variant['algorithm_kwargs']['max_path_length'])
+    # expl_env = EasyPointmassVQVAE(obs_dim=192, rep_type='mixed',
+    #                              max_steps=variant['algorithm_kwargs']['max_path_length'])
+
+    eval_env = EasyPusher(
+        goal_name='push_block', max_steps=variant['algorithm_kwargs']['max_path_length'])
+
+    expl_env = EasyPusher(
+        goal_name='push_block', max_steps=variant['algorithm_kwargs']['max_path_length'])
+
     obs_dim = expl_env.observation_space.low.size
     action_dim = eval_env.action_space.low.size
 
@@ -85,13 +93,13 @@ if __name__ == "__main__":
     variant = dict(
         algorithm="SAC",
         version="normal",
-        env_name='vqvae_pointmass',
-        title='cheat_mixed',
+        env_name='pusher',
+        title='jul20-push-block',
         save=True,
         layer_size=256,
         replay_buffer_size=int(1E6),
         algorithm_kwargs=dict(
-            num_epochs=500,
+            num_epochs=10000,
             num_eval_steps_per_epoch=1000,
             num_trains_per_train_loop=1000,
             num_expl_steps_per_train_loop=1000,

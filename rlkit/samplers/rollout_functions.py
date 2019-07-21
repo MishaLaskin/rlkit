@@ -84,10 +84,13 @@ def multitask_rollout_visualizer(
         desired_goal_key=None,
         get_action_kwargs=None,
         return_dict_obs=False,
-        color=False
+        use_color=False
 ):
-    n_colors = 15
+    n_colors = max_path_length
     colors = create_color_template(n_colors)
+    colors = iter(colors)
+    original_color = original_object_color(env)
+    last_color = original_color.copy()
 
     if render_kwargs is None:
         render_kwargs = {}
@@ -119,15 +122,21 @@ def multitask_rollout_visualizer(
             a = env.action_space.sample()
             agent_info = None
         next_o, r, d, env_info = env.step(a)
-        if color:
+        if use_color:
             if hasattr(env, 'current_rep') and hasattr(env, 'last_rep'):
                 if env.current_rep != env.last_rep:
-                    index = np.random.randint(n_colors)
-                    color = colors[index]
+                    #index = np.random.randint(n_colors)
+                    #color = colors[index]/255.0
+                    color = next(colors)/255.0
+                    last_color = color.copy()
                     change_object_color(env, color)
+                else:
+                    change_object_color(env, last_color)
         if render:
             img = env.render(**render_kwargs)
             imgs.append(img)
+        if use_color:
+            change_object_color(env, original_color)
         observations.append(o)
         rewards.append(r)
         terminals.append(d)
@@ -237,6 +246,7 @@ def rollout_visualizer(
         max_path_length=np.inf,
         render=True,
         render_kwargs=dict(width=256, height=256, camera_id=0),
+        use_color=False,
 ):
     """
     The following value for the following keys will be a 2D array, with the
@@ -244,20 +254,8 @@ def rollout_visualizer(
      - observations
      - actions
      - rewards
-     - next_obse    n_colors = 15
-    colors = create_color_template(n_colors)
-        if hasattr(env, 'current_rep') and hasattr(env, 'last_rep'):
-            if env.current_rep != env.last_rep:
-                index = np.random.randint(n_colors)
-                color = colors[index]
-                change_object_color(env, color)
-     - terminals    n_colors = 15
-    colors = create_color_template(n_colors)
-        if hasattr(env, 'current_rep') and hasattr(env, 'last_rep'):
-            if env.current_rep != env.last_rep:
-                index = np.random.randint(n_colors)
-                color = colors[index]
-                change_object_color(env, color)
+     - next_observations
+     - terminals
 
     The next two elements will be lists of dictionaries, with the index into
     the list being the index into the time
@@ -296,11 +294,12 @@ def rollout_visualizer(
             break
         o = next_o
 
-        if hasattr(env, 'current_rep') and hasattr(env, 'last_rep'):
-            if env.current_rep != env.last_rep:
-                index = np.random.randint(n_colors)
-                color = colors[index]
-                change_object_color(env, color)
+        if use_color:
+            if hasattr(env, 'current_rep') and hasattr(env, 'last_rep'):
+                if env.current_rep != env.last_rep:
+                    index = np.random.randint(n_colors)
+                    color = colors[index]
+                    change_object_color(env, color)
         if render:
             imgs.append(env.render(**render_kwargs))
 
@@ -324,13 +323,8 @@ def rollout_visualizer(
 
 
 def create_color_template(n):
-    num_shades = n
-    if n < 1000:
-        sns.palplot(sns.husl_palette(num_shades))
-        color_list = sns.husl_palette(num_shades)
-    else:
-        sns.palplot(sns.cubehelix_palette(num_shades))
-        color_list = sns.cubehelix_palette(num_shades)
+
+    color_list = sns.color_palette("husl", n)
 
     rgb_list = []
     for color in color_list:
@@ -344,6 +338,12 @@ def create_color_template(n):
 
 
 def change_object_color(env, color):
-    _MATERIALS = ["self"]
+    _MATERIALS = ["effector"]
+
     env.dm_env.physics.named.model.mat_rgba[_MATERIALS] = list(
-        color/255.0)+[1.0]
+        color)+[1.0]
+
+
+def original_object_color(env):
+    _MATERIALS = ["effector"]
+    return env.dm_env.physics.named.model.mat_rgba[_MATERIALS][0][:3]

@@ -107,9 +107,11 @@ class ObsDictRelabelingBuffer(ReplayBuffer):
 
         actions = flatten_n(actions)
         if isinstance(self.env.action_space, Discrete):
-            actions = np.eye(self._action_dim)[actions].reshape((-1, self._action_dim))
+            actions = np.eye(self._action_dim)[
+                actions].reshape((-1, self._action_dim))
         obs = flatten_dict(obs, self.ob_keys_to_save + self.internal_keys)
-        next_obs = flatten_dict(next_obs, self.ob_keys_to_save + self.internal_keys)
+        next_obs = flatten_dict(
+            next_obs, self.ob_keys_to_save + self.internal_keys)
         obs = preprocess_obs_dict(obs)
         next_obs = preprocess_obs_dict(next_obs)
 
@@ -121,8 +123,8 @@ class ObsDictRelabelingBuffer(ReplayBuffer):
             num_pre_wrap_steps = self.max_size - self._top
             # numpy slice
             pre_wrap_buffer_slice = np.s_[
-                                    self._top:self._top + num_pre_wrap_steps, :
-                                    ]
+                self._top:self._top + num_pre_wrap_steps, :
+            ]
             pre_wrap_path_slice = np.s_[0:num_pre_wrap_steps, :]
 
             num_post_wrap_steps = path_len - num_pre_wrap_steps
@@ -189,7 +191,7 @@ class ObsDictRelabelingBuffer(ReplayBuffer):
                 new_obs_dict[goal_key][num_rollout_goals:last_env_goal_idx] = \
                     env_goals[goal_key]
                 new_next_obs_dict[goal_key][
-                num_rollout_goals:last_env_goal_idx] = \
+                    num_rollout_goals:last_env_goal_idx] = \
                     env_goals[goal_key]
         if num_future_goals > 0:
             future_obs_idxs = []

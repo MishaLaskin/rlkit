@@ -17,24 +17,14 @@ from vqvae.envs.pointmass import GoalPointmass, GoalPointmassVQVAE
 
 from vqvae.envs.reacher import GoalReacher
 from vqvae.envs.reacher import GoalReacherVQVAE, GoalReacherNoTargetVQVAE
-from vqvae.envs.pusher import GoalPusher
+from vqvae.envs.pusher import GoalPusher, GoalPusherNoTargetVQVAE
 
 MODEL_PATH = '/home/misha/research/vqvae/results/vqvae_temporal_data_long_ne8nd2.pth'
 MODEL_PATH = '/home/misha/research/vqvae/results/vqvae_data_reacher_no_target_jul17_ne8nd2.pth'
+MODEL_PATH = '/home/misha/research/vqvae/results/vqvae_data_pusher_no_target_jul21_ne512nd2.pth'
 
 
 def experiment(variant):
-    """
-    eval_env = GoalPointmassVQVAE(threshold=0.15, obs_dim=128, goal_dim=128, model_path=MODEL_PATH, reward_type='sparse_exploration',
-                                  max_steps=variant['algo_kwargs']['max_path_length'])
-    expl_env = GoalPointmassVQVAE(threshold=0.15, obs_dim=128, goal_dim=128, model_path=MODEL_PATH, reward_type='sparse_exploration',
-                                  max_steps=variant['algo_kwargs']['max_path_length'])
-
-    eval_env = GoalReacherNoTargetVQVAE(threshold=0.2, obs_dim=128, goal_dim=128, model_path=MODEL_PATH, reward_type='sparse',
-                                        max_steps=variant['algo_kwargs']['max_path_length'])
-
-    expl_env = GoalReacherNoTargetVQVAE(threshold=0.2, obs_dim=128, goal_dim=128, model_path=MODEL_PATH, reward_type='sparse',
-                                        max_steps=variant['algo_kwargs']['max_path_length'])
     """
 
     eval_env = GoalPusher(threshold=0.05, reward_type='sparse',
@@ -42,10 +32,22 @@ def experiment(variant):
     expl_env = GoalPusher(threshold=0.05, reward_type='sparse',
                           max_steps=variant['algo_kwargs']['max_path_length'])
 
-    observation_key = 'observation'
-    desired_goal_key = 'desired_goal'
+    eval_env = GoalReacherNoTargetVQVAE(threshold=0.2, obs_dim=128, goal_dim=128, model_path=MODEL_PATH, reward_type='sparse',
+                                        max_steps=variant['algo_kwargs']['max_path_length'])
 
-    achieved_goal_key = desired_goal_key.replace("desired", "achieved")
+    expl_env = GoalReacherNoTargetVQVAE(threshold=0.2, obs_dim=128, goal_dim=128, model_path=MODEL_PATH, reward_type='sparse',
+                                        max_steps=variant['algo_kwargs']['max_path_length'])
+    """
+    eval_env = GoalPusherNoTargetVQVAE(threshold=0.05, obs_dim=128, goal_dim=3, img_dim=64, model_path=MODEL_PATH, reward_type='real_sparse',
+                                       max_steps=variant['algo_kwargs']['max_path_length'])
+
+    expl_env = GoalPusherNoTargetVQVAE(threshold=0.05, obs_dim=128, goal_dim=3, img_dim=64, model_path=MODEL_PATH, reward_type='real_sparse',
+                                       max_steps=variant['algo_kwargs']['max_path_length'])
+
+    observation_key = 'observation'
+    # ground truth goals
+    desired_goal_key = 'state_desired_goal'
+    achieved_goal_key = 'state_achieved_goal'
     replay_buffer = ObsDictRelabelingBuffer(
         env=eval_env,
         observation_key=observation_key,
@@ -119,10 +121,10 @@ def experiment(variant):
 
 if __name__ == "__main__":
     variant = dict(
-        algorithm='SAC-HER-VQVAE',
+        algorithm='DAC',
         version='normal',
-        env_name='goal_pusher',
-        title='jul20',
+        env_name='pusher_real_sparse',
+        title='jul21',
         save=True,
         algo_kwargs=dict(
             batch_size=128,

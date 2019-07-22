@@ -84,11 +84,14 @@ def multitask_rollout_visualizer(
         desired_goal_key=None,
         get_action_kwargs=None,
         return_dict_obs=False,
-        use_color=False
+        use_color=False,
+        random_colors=False,
+        fixed_length=False,
 ):
     n_colors = max_path_length
     colors = create_color_template(n_colors)
-    colors = iter(colors)
+    if not random_colors:
+        colors = iter(colors)
     original_color = original_object_color(env)
     last_color = original_color.copy()
 
@@ -125,9 +128,11 @@ def multitask_rollout_visualizer(
         if use_color:
             if hasattr(env, 'current_rep') and hasattr(env, 'last_rep'):
                 if env.current_rep != env.last_rep:
-                    #index = np.random.randint(n_colors)
-                    #color = colors[index]/255.0
-                    color = next(colors)/255.0
+                    if random_colors:
+                        index = np.random.randint(n_colors)
+                        color = colors[index]/255.0
+                    else:
+                        color = next(colors)/255.0
                     last_color = color.copy()
                     change_object_color(env, color)
                 else:
@@ -147,7 +152,8 @@ def multitask_rollout_visualizer(
         env_infos.append(env_info)
         path_length += 1
         if d:
-            break
+            if not fixed_length:
+                break
         o = next_o
     actions = np.array(actions)
     if len(actions.shape) == 1:
@@ -338,12 +344,12 @@ def create_color_template(n):
 
 
 def change_object_color(env, color):
-    _MATERIALS = ["effector"]
+    _MATERIALS = ["self"]
 
     env.dm_env.physics.named.model.mat_rgba[_MATERIALS] = list(
         color)+[1.0]
 
 
 def original_object_color(env):
-    _MATERIALS = ["effector"]
+    _MATERIALS = ["self"]
     return env.dm_env.physics.named.model.mat_rgba[_MATERIALS][0][:3]

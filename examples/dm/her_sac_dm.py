@@ -21,7 +21,7 @@ from vqvae.envs.pusher import GoalPusher, GoalPusherNoTargetVQVAE
 
 MODEL_PATH = '/home/misha/research/vqvae/results/vqvae_temporal_data_long_ne8nd2.pth'
 MODEL_PATH = '/home/misha/research/vqvae/results/vqvae_data_reacher_no_target_jul17_ne8nd2.pth'
-MODEL_PATH = '/home/misha/research/vqvae/results/vqvae_data_pusher_no_target_jul21_ne512nd2.pth'
+MODEL_PATH = '/home/misha/research/vqvae/results/vqvae_data_pusher_no_target_jul21_ne8nd2.pth'
 
 
 def experiment(variant):
@@ -124,7 +124,7 @@ if __name__ == "__main__":
         algorithm='DAC',
         version='normal',
         env_name='pusher_real_sparse',
-        title='jul21',
+        title='jul22',
         save=True,
         algo_kwargs=dict(
             batch_size=128,

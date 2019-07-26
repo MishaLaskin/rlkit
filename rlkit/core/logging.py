@@ -128,7 +128,8 @@ class Logger(object):
             file_name = osp.join(self._snapshot_dir, file_name)
         if self._tabular_fds[file_name] in self._tabular_header_written:
             self._tabular_header_written.remove(self._tabular_fds[file_name])
-        self._remove_output(file_name, self._tabular_outputs, self._tabular_fds)
+        self._remove_output(
+            file_name, self._tabular_outputs, self._tabular_fds)
 
     def set_snapshot_dir(self, dir_name):
         self._snapshot_dir = dir_name
@@ -238,7 +239,8 @@ class Logger(object):
             prefix = key
             suffix = ""
         if len(values) > 0:
-            self.record_tabular(prefix + "Average" + suffix, np.average(values))
+            self.record_tabular(prefix + "Average" +
+                                suffix, np.average(values))
             self.record_tabular(prefix + "Std" + suffix, np.std(values))
             self.record_tabular(prefix + "Median" + suffix, np.median(values))
             self.record_tabular(prefix + "Min" + suffix, np.min(values))
@@ -283,15 +285,19 @@ class Logger(object):
                 pickle.dump(params, open(file_name, "wb"))
             elif self._snapshot_mode == 'last':
                 # override previous params
+                del params['exploration/env']
+                del params['evaluation/env']
                 file_name = osp.join(self._snapshot_dir, 'params.pkl')
                 pickle.dump(params, open(file_name, "wb"))
             elif self._snapshot_mode == "gap":
                 if itr % self._snapshot_gap == 0:
-                    file_name = osp.join(self._snapshot_dir, 'itr_%d.pkl' % itr)
+                    file_name = osp.join(
+                        self._snapshot_dir, 'itr_%d.pkl' % itr)
                     pickle.dump(params, open(file_name, "wb"))
             elif self._snapshot_mode == "gap_and_last":
                 if itr % self._snapshot_gap == 0:
-                    file_name = osp.join(self._snapshot_dir, 'itr_%d.pkl' % itr)
+                    file_name = osp.join(
+                        self._snapshot_dir, 'itr_%d.pkl' % itr)
                     pickle.dump(params, open(file_name, "wb"))
                 file_name = osp.join(self._snapshot_dir, 'params.pkl')
                 pickle.dump(params, open(file_name, "wb"))
@@ -302,4 +308,3 @@ class Logger(object):
 
 
 logger = Logger()
-

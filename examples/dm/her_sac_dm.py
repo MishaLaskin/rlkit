@@ -19,6 +19,7 @@ from vqvae.envs.reacher import GoalReacher
 from vqvae.envs.reacher import GoalReacherVQVAE, GoalReacherNoTargetVQVAE
 from vqvae.envs.pusher import GoalPusher, GoalPusherNoTargetVQVAE
 from vqvae.envs.utils import SimpleGoalEnv, LatentGoalEnv
+from vqvae.envs.stacker import StackerGoalEnv, StackerLatentGoalEnv
 
 MODEL_PATH = '/home/misha/research/vqvae/results/vqvae_temporal_data_long_ne8nd2.pth'
 MODEL_PATH = '/home/misha/research/vqvae/results/vqvae_data_reacher_no_target_jul17_ne8nd2.pth'
@@ -43,12 +44,52 @@ def experiment(variant):
                              task='push_1', max_steps=variant['algo_kwargs']['max_path_length'])
     expl_env = SimpleGoalEnv(obs_dim=42, goal_dim=3, env_name='stacker', reward_type='dense',
                              task='push_1', max_steps=variant['algo_kwargs']['max_path_length'])
-    """
+
     eval_env = LatentGoalEnv(obs_dim=128, goal_dim=128, reward_type='sparse',
                              threshold=0.1, max_steps=variant['algo_kwargs']['max_path_length'])
     expl_env = LatentGoalEnv(obs_dim=128, goal_dim=128, reward_type='sparse',
                              threshold=0.1, max_steps=variant['algo_kwargs']['max_path_length'])
+    """
 
+    eval_env = StackerLatentGoalEnv(obs_dim=128,
+                                    goal_dim=128,
+                                    env_name='stacker',
+                                    task='pick_and_place',
+                                    max_steps=variant['algo_kwargs']['max_path_length'],
+                                    reward_type='pick_and_place_sparse',
+                                    threshold=0.08,
+                                    render_kwargs=dict(
+                                        width=64, height=64, camera_id=0),
+                                    gpu_id=0,
+                                    easy_reset=False)
+
+    expl_env = StackerLatentGoalEnv(obs_dim=128,
+                                    goal_dim=128,
+                                    env_name='stacker',
+                                    task='pick_and_place',
+                                    max_steps=variant['algo_kwargs']['max_path_length'],
+                                    reward_type='pick_and_place_sparse',
+                                    threshold=0.08,
+                                    render_kwargs=dict(
+                                        width=64, height=64, camera_id=0),
+                                    gpu_id=0,
+                                    easy_reset=False)
+    """
+
+    eval_env = StackerGoalEnv(obs_dim=30, goal_dim=3,
+                              env_name='stacker',
+                              task='pick_and_place',
+                              max_steps=variant['algo_kwargs']['max_path_length'],
+                              reward_type='pick_and_place_sparse',
+                              threshold=0.05)
+
+    expl_env = StackerGoalEnv(obs_dim=30, goal_dim=3,
+                              env_name='stacker',
+                              task='pick_and_place',
+                              max_steps=variant['algo_kwargs']['max_path_length'],
+                              reward_type='pick_and_place_sparse',
+                              threshold=0.05)
+    """
     observation_key = 'observation'
     # ground truth goals
     desired_goal_key = 'desired_goal'
@@ -129,17 +170,17 @@ if __name__ == "__main__":
     variant = dict(
         algorithm='LSAC',
         version='normal',
-        env_name='pusher_latent',
-        title='jul25',
+        env_name='pick_and_place_sparse_latent',
+        title='aug3',
         save=True,
         algo_kwargs=dict(
             batch_size=128,
-            num_epochs=5000,
+            num_epochs=20000,
             num_eval_steps_per_epoch=1000,
             num_expl_steps_per_train_loop=1000,
             num_trains_per_train_loop=1000,
             min_num_steps_before_training=1000,
-            max_path_length=100,
+            max_path_length=200,
         ),
         sac_trainer_kwargs=dict(
             discount=0.99,

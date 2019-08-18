@@ -2,7 +2,7 @@ import gym
 
 
 import rlkit.torch.pytorch_util as ptu
-from rlkit.data_management.obs_dict_replay_buffer import ObsDictRelabelingBuffer
+from rlkit.data_management.obs_dict_replay_buffer import ObsDictRelabelingBuffer, ObsDictGraphRelabelingBuffer
 from rlkit.launchers.launcher_util import setup_logger
 from rlkit.samplers.data_collector import GoalConditionedPathCollector
 from rlkit.torch.her.her import HERTrainer
@@ -16,11 +16,11 @@ from rlkit.envs.dm import DMGoalPointMassEnv
 from vqvae.envs.pointmass import GoalPointmass, GoalPointmassVQVAE
 
 from vqvae.envs.reacher import GoalReacher
-from vqvae.envs.reacher import GoalReacherVQVAE, GoalReacherNoTargetVQVAE
+#from vqvae.envs.reacher import GoalReacherVQVAE, GoalReacherNoTargetVQVAE
 from vqvae.envs.pusher import GoalPusher, GoalPusherNoTargetVQVAE
 from vqvae.envs.utils import SimpleGoalEnv, LatentGoalEnv
 from vqvae.envs.stacker import StackerGoalEnv, StackerLatentGoalEnv
-
+from rlsink.envs.reacher import GoalReacherNoTargetVQVAE
 MODEL_PATH = '/home/misha/research/vqvae/results/vqvae_temporal_data_long_ne8nd2.pth'
 MODEL_PATH = '/home/misha/research/vqvae/results/vqvae_data_reacher_no_target_jul17_ne8nd2.pth'
 MODEL_PATH = '/home/misha/research/vqvae/results/vqvae_data_pusher_no_target_jul21_ne8nd2.pth'
@@ -49,7 +49,7 @@ def experiment(variant):
                              threshold=0.1, max_steps=variant['algo_kwargs']['max_path_length'])
     expl_env = LatentGoalEnv(obs_dim=128, goal_dim=128, reward_type='sparse',
                              threshold=0.1, max_steps=variant['algo_kwargs']['max_path_length'])
-    """
+
 
     eval_env = StackerLatentGoalEnv(obs_dim=128,
                                     goal_dim=128,
@@ -74,7 +74,7 @@ def experiment(variant):
                                         width=64, height=64, camera_id=0),
                                     gpu_id=0,
                                     easy_reset=False)
-    """
+
 
     eval_env = StackerGoalEnv(obs_dim=30, goal_dim=3,
                               env_name='stacker',
@@ -90,11 +90,40 @@ def experiment(variant):
                               reward_type='pick_and_place_sparse',
                               threshold=0.05)
     """
+
+    eval_env = GoalReacherNoTargetVQVAE(
+        obs_dim=128,
+        goal_dim=128,
+        model_path='/home/misha/research/vqvae/results/vqvae_data_reacher_aug7_ne128nd2.pth',
+        graph_path='/home/misha/research/rlsink/saved/reacher_graph.pkl',
+        img_dim=32,
+        camera_id=0,
+        gpu_id=0,
+        reward_type='sparse',
+        rep_type='continuous',
+        max_steps=variant['algo_kwargs']['max_path_length'],
+        threshold=0.15,
+        explore=False)
+
+    expl_env = GoalReacherNoTargetVQVAE(
+        obs_dim=128,
+        goal_dim=128,
+        model_path='/home/misha/research/vqvae/results/vqvae_data_reacher_aug7_ne128nd2.pth',
+        graph_path='/home/misha/research/rlsink/saved/reacher_graph.pkl',
+        img_dim=32,
+        camera_id=0,
+        gpu_id=0,
+        reward_type='sparse',
+        rep_type='continuous',
+        max_steps=variant['algo_kwargs']['max_path_length'],
+        threshold=0.15,
+        explore=False)
+
     observation_key = 'observation'
     # ground truth goals
     desired_goal_key = 'desired_goal'
     achieved_goal_key = 'achieved_goal'
-    replay_buffer = ObsDictRelabelingBuffer(
+    replay_buffer = ObsDictGraphRelabelingBuffer(
         env=eval_env,
         observation_key=observation_key,
         desired_goal_key=desired_goal_key,
@@ -168,10 +197,10 @@ def experiment(variant):
 
 if __name__ == "__main__":
     variant = dict(
-        algorithm='LSAC',
+        algorithm='LMG',
         version='normal',
-        env_name='pick_and_place_sparse_latent',
-        title='aug3',
+        env_name='reacher',
+        title='aug17',
         save=True,
         algo_kwargs=dict(
             batch_size=128,
@@ -180,7 +209,7 @@ if __name__ == "__main__":
             num_expl_steps_per_train_loop=1000,
             num_trains_per_train_loop=1000,
             min_num_steps_before_training=1000,
-            max_path_length=200,
+            max_path_length=500,
         ),
         sac_trainer_kwargs=dict(
             discount=0.99,
@@ -193,7 +222,7 @@ if __name__ == "__main__":
         ),
         replay_buffer_kwargs=dict(
             max_size=int(1E6),
-            fraction_goals_rollout_goals=.2,
+            fraction_goals_rollout_goals=1.,
             fraction_goals_env_goals=0,
         ),
         qf_kwargs=dict(

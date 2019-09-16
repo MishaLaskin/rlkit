@@ -19,6 +19,7 @@ class VAEWrappedEnv(ProxyEnv, MultitaskEnv):
     This class adheres to the "Silent Multitask Env" semantics: on reset,
     it resamples a goal.
     """
+
     def __init__(
         self,
         wrapped_env,
@@ -35,18 +36,23 @@ class VAEWrappedEnv(ProxyEnv, MultitaskEnv):
         norm_order=2,
         epsilon=20,
         presampled_goals=None,
+
     ):
         if reward_params is None:
             reward_params = dict()
         super().__init__(wrapped_env)
         self.vae = vae
-        self.representation_size = self.vae.representation_size
+        # print(vae)
+        if hasattr(vae, 'representation_size'):
+            self.representation_size = self.vae.representation_size
+        else:
+            self.representation_size = None
         self.input_channels = self.vae.input_channels
         self.sample_from_true_prior = sample_from_true_prior
         self._decode_goals = decode_goals
         self.render_goals = render_goals
         self.render_rollouts = render_rollouts
-        self.default_kwargs=dict(
+        self.default_kwargs = dict(
             decode_goals=decode_goals,
             render_goals=render_goals,
             render_rollouts=render_rollouts,
@@ -74,7 +80,8 @@ class VAEWrappedEnv(ProxyEnv, MultitaskEnv):
         if self._presampled_goals is None:
             self.num_goals_presampled = 0
         else:
-            self.num_goals_presampled = presampled_goals[random.choice(list(presampled_goals))].shape[0]
+            self.num_goals_presampled = presampled_goals[random.choice(
+                list(presampled_goals))].shape[0]
 
         self.vae_input_key_prefix = vae_input_key_prefix
         assert vae_input_key_prefix in {'image', 'image_proprio'}
@@ -86,7 +93,6 @@ class VAEWrappedEnv(ProxyEnv, MultitaskEnv):
         self._initial_obs = None
         self._custom_goal_sampler = None
         self._goal_sampling_mode = goal_sampling_mode
-
 
     def reset(self):
         obs = self.wrapped_env.reset()
@@ -118,9 +124,10 @@ class VAEWrappedEnv(ProxyEnv, MultitaskEnv):
 
     def _update_info(self, info, obs):
         latent_distribution_params = self.vae.encode(
-            ptu.from_numpy(obs[self.vae_input_observation_key].reshape(1,-1))
+            ptu.from_numpy(obs[self.vae_input_observation_key].reshape(1, -1))
         )
-        latent_obs, logvar = ptu.get_numpy(latent_distribution_params[0])[0], ptu.get_numpy(latent_distribution_params[1])[0]
+        latent_obs, logvar = ptu.get_numpy(latent_distribution_params[0])[
+            0], ptu.get_numpy(latent_distribution_params[1])[0]
         # assert (latent_obs == obs['latent_observation']).all()
         latent_goal = self.desired_goal['latent_desired_goal']
         dist = latent_goal - latent_obs
@@ -137,6 +144,7 @@ class VAEWrappedEnv(ProxyEnv, MultitaskEnv):
     """
     Multitask functions
     """
+
     def sample_goals(self, batch_size):
         # TODO: make mode a parameter you pass in
         if self._goal_sampling_mode == 'custom_goal_sampler':
@@ -148,7 +156,8 @@ class VAEWrappedEnv(ProxyEnv, MultitaskEnv):
             }
             # ensures goals are encoded using latest vae
             if 'image_desired_goal' in sampled_goals:
-                sampled_goals['latent_desired_goal'] = self._encode(sampled_goals['image_desired_goal'])
+                sampled_goals['latent_desired_goal'] = self._encode(
+                    sampled_goals['image_desired_goal'])
             return sampled_goals
         elif self._goal_sampling_mode == 'env':
             goals = self.wrapped_env.sample_goals(batch_size)
@@ -199,7 +208,8 @@ class VAEWrappedEnv(ProxyEnv, MultitaskEnv):
         if self.reward_type == 'latent_distance':
             achieved_goals = obs['latent_achieved_goal']
             desired_goals = obs['latent_desired_goal']
-            dist = np.linalg.norm(desired_goals - achieved_goals, ord=self.norm_order, axis=1)
+            dist = np.linalg.norm(
+                desired_goals - achieved_goals, ord=self.norm_order, axis=1)
             return -dist
         elif self.reward_type == 'vectorized_latent_distance':
             achieved_goals = obs['latent_achieved_goal']
@@ -208,7 +218,8 @@ class VAEWrappedEnv(ProxyEnv, MultitaskEnv):
         elif self.reward_type == 'latent_sparse':
             achieved_goals = obs['latent_achieved_goal']
             desired_goals = obs['latent_desired_goal']
-            dist = np.linalg.norm(desired_goals - achieved_goals, ord=self.norm_order, axis=1)
+            dist = np.linalg.norm(
+                desired_goals - achieved_goals, ord=self.norm_order, axis=1)
             reward = 0 if dist < self.epsilon else -1
             return reward
         elif self.reward_type == 'state_distance':
@@ -275,7 +286,7 @@ class VAEWrappedEnv(ProxyEnv, MultitaskEnv):
             if test_goals is None:
                 self._goal_sampling_mode = 'vae_prior'
                 warnings.warn(
-                    "self.goal_sampler returned None. " + \
+                    "self.goal_sampler returned None. " +
                     "Defaulting to vae_prior goal sampling mode"
                 )
 
@@ -341,7 +352,8 @@ class VAEWrappedEnv(ProxyEnv, MultitaskEnv):
             ).transpose()
             cv2.imshow('env', img)
             cv2.waitKey(1)
-            reconstruction = self._reconstruct_img(obs['image_observation']).transpose()
+            reconstruction = self._reconstruct_img(
+                obs['image_observation']).transpose()
             cv2.imshow('env_reconstruction', reconstruction)
             cv2.waitKey(1)
             init_img = self._initial_obs['image_observation'].reshape(
@@ -372,11 +384,13 @@ class VAEWrappedEnv(ProxyEnv, MultitaskEnv):
         else:
             mu, sigma = self.vae.dist_mu, self.vae.dist_std
         n = np.random.randn(batch_size, self.representation_size)
+
         return sigma * n + mu
 
     def _decode(self, latents):
         reconstructions, _ = self.vae.decode(ptu.from_numpy(latents))
         decoded = ptu.get_numpy(reconstructions)
+
         return decoded
 
     def _encode_one(self, img):
@@ -384,10 +398,12 @@ class VAEWrappedEnv(ProxyEnv, MultitaskEnv):
 
     def _encode(self, imgs):
         latent_distribution_params = self.vae.encode(ptu.from_numpy(imgs))
+        x = ptu.get_numpy(latent_distribution_params[0])
         return ptu.get_numpy(latent_distribution_params[0])
 
     def _reconstruct_img(self, flat_img):
-        latent_distribution_params = self.vae.encode(ptu.from_numpy(flat_img.reshape(1,-1)))
+        latent_distribution_params = self.vae.encode(
+            ptu.from_numpy(flat_img.reshape(1, -1)))
         reconstructions, _ = self.vae.decode(latent_distribution_params[0])
         imgs = ptu.get_numpy(reconstructions)
         imgs = imgs.reshape(

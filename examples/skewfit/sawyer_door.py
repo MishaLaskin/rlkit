@@ -63,7 +63,7 @@ if __name__ == "__main__":
                     decoder_distribution='gaussian_identity_variance',
                     num_latents_to_sample=10,
                 ),
-                power=-0.5,
+                power=0,
                 relabeling_goal_sampling_mode='custom_goal_sampler',
             ),
             exploration_goal_sampling_mode='custom_goal_sampler',
@@ -132,5 +132,4 @@ if __name__ == "__main__":
                 mode=mode,
                 variant=variant,
                 use_gpu=True,
-          )
-
+            )

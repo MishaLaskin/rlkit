@@ -75,21 +75,7 @@ def experiment(variant):
                                     gpu_id=0,
                                     easy_reset=False)
 
-
-    eval_env = StackerGoalEnv(obs_dim=30, goal_dim=3,
-                              env_name='stacker',
-                              task='pick_and_place',
-                              max_steps=variant['algo_kwargs']['max_path_length'],
-                              reward_type='pick_and_place_sparse',
-                              threshold=0.05)
-
-    expl_env = StackerGoalEnv(obs_dim=30, goal_dim=3,
-                              env_name='stacker',
-                              task='pick_and_place',
-                              max_steps=variant['algo_kwargs']['max_path_length'],
-                              reward_type='pick_and_place_sparse',
-                              threshold=0.05)
-    """
+    
 
     eval_env = GoalReacherNoTargetVQVAE(
         obs_dim=128,
@@ -118,12 +104,37 @@ def experiment(variant):
         max_steps=variant['algo_kwargs']['max_path_length'],
         threshold=0.15,
         explore=False)
+    
+    
+    
+    eval_env = StackerGoalEnv(obs_dim=30, goal_dim=3,
+                              env_name='stacker',
+                              task='pick_and_place',
+                              max_steps=variant['algo_kwargs']['max_path_length'],
+                              reward_type='pick_and_place_sparse',
+                              threshold=0.05)
+
+    expl_env = StackerGoalEnv(obs_dim=30, goal_dim=3,
+                              env_name='stacker',
+                              task='pick_and_place',
+                              max_steps=variant['algo_kwargs']['max_path_length'],
+                              reward_type='pick_and_place_sparse',
+                              threshold=0.05)
+    """
+    eval_env = LatentGoalEnv(obs_dim=128, goal_dim=128, reward_type='sparse',
+                             threshold=0.2, 
+                             gpu_id=variant['gpu_id'],
+                             max_steps=variant['algo_kwargs']['max_path_length'])
+    expl_env = LatentGoalEnv(obs_dim=128, goal_dim=128, reward_type='sparse',
+                             threshold=0.2, 
+                             gpu_id=variant['gpu_id'],
+                             max_steps=variant['algo_kwargs']['max_path_length'])
 
     observation_key = 'observation'
     # ground truth goals
     desired_goal_key = 'desired_goal'
     achieved_goal_key = 'achieved_goal'
-    replay_buffer = ObsDictGraphRelabelingBuffer(
+    replay_buffer = ObsDictRelabelingBuffer(
         env=eval_env,
         observation_key=observation_key,
         desired_goal_key=desired_goal_key,
@@ -197,11 +208,12 @@ def experiment(variant):
 
 if __name__ == "__main__":
     variant = dict(
-        algorithm='LMG',
+        algorithm='BLAC',
         version='normal',
-        env_name='reacher',
-        title='aug17',
+        env_name='pushblock2',
+        title='sep2',
         save=True,
+        gpu_id=7,
         algo_kwargs=dict(
             batch_size=128,
             num_epochs=20000,
@@ -240,5 +252,5 @@ if __name__ == "__main__":
         name = get_name(variant)
         setup_logger(name, variant=variant)
     # optionally set the GPU (default=False)
-    ptu.set_gpu_mode(True, gpu_id=0)
+    ptu.set_gpu_mode(True, gpu_id=variant['gpu_id'])
     experiment(variant)

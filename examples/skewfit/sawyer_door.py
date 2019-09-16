@@ -40,7 +40,7 @@ if __name__ == "__main__":
             ),
             max_path_length=100,
             algo_kwargs=dict(
-                batch_size=1024,
+                batch_size=256,
                 num_epochs=170,
                 num_eval_steps_per_epoch=500,
                 num_expl_steps_per_train_loop=500,

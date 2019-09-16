@@ -7,7 +7,7 @@ import rlkit.torch.vae.vae_schedules as vae_schedules
 from rlkit.launchers.skewfit_experiments import \
     skewfit_full_experiment
 from rlkit.torch.vae.conv_vae import imsize48_default_architecture
-
+import rlkit.torch.pytorch_util as ptu
 
 if __name__ == "__main__":
     variant = dict(
@@ -15,6 +15,7 @@ if __name__ == "__main__":
         double_algo=False,
         online_vae_exploration=False,
         imsize=48,
+        gpu_id=6,
         env_id='SawyerDoorHookResetFreeEnv-v1',
         init_camera=sawyer_door_env_camera_v0,
         skewfit_variant=dict(

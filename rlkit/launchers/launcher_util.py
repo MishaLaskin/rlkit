@@ -142,8 +142,8 @@ def run_experiment_here(
     )
 
     set_seed(seed)
-    set_gpu_mode(use_gpu)
-
+    set_gpu_mode(use_gpu,variant['gpu_id'])
+    
     run_experiment_here_kwargs = dict(
         variant=variant,
         exp_id=exp_id,

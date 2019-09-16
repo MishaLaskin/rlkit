@@ -18,6 +18,7 @@ if __name__ == "__main__":
         algorithm='Skew-Fit',
         imsize=48,
         double_algo=False,
+        gpu_id=0,
         env_id="SawyerPickupEnvYZEasy-v0",
         skewfit_variant=dict(
             sample_goals_from_buffer=True,
@@ -97,7 +98,7 @@ if __name__ == "__main__":
         train_vae_variant=dict(
             representation_size=16,
             beta=5,
-            num_epochs=0,
+            num_epochs=100,
             dump_skew_debug_plots=True,
             decoder_activation='gaussian',
             vae_kwargs=dict(

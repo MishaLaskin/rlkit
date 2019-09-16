@@ -15,7 +15,7 @@ if __name__ == "__main__":
         double_algo=False,
         online_vae_exploration=False,
         imsize=48,
-        gpu_id=6,
+        gpu_id=0,
         env_id='SawyerDoorHookResetFreeEnv-v1',
         init_camera=sawyer_door_env_camera_v0,
         skewfit_variant=dict(

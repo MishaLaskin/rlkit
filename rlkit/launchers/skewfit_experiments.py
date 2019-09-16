@@ -54,12 +54,9 @@ def full_experiment_variant_preprocess(variant):
     skewfit_variant['imsize'] = imsize
     skewfit_variant['init_camera'] = init_camera
 
-<<<<<<< HEAD
     train_vae_variant['gpu_id'] = variant['gpu_id']
     skewfit_variant['gpu_id'] = variant['gpu_id']
 
-=======
->>>>>>> 9f2f4fbc9fc8b566eb5a28c136d6f518fc9c8282
 
 def train_vae_and_update_variant(variant):
     from rlkit.core import logger
@@ -148,30 +145,32 @@ def train_vae(variant, return_data=False):
     n_embeddings = 64
     embedding_dim = 2
     beta = 0.25
-<<<<<<< HEAD
-    # print(architecture)
-    #print('variant gpu',variant['gpu_id'])
-    #assert False 
-    m = VQVAE(architecture, imsize, n_embeddings,
-              embedding_dim, beta, variant["gpu_id"])
-=======
-    gpu_id = 0
-    # print(architecture)
-    m = VQVAE(architecture, imsize, n_embeddings,
-              embedding_dim, beta, gpu_id)
->>>>>>> 9f2f4fbc9fc8b566eb5a28c136d6f518fc9c8282
 
-    m.to(ptu.device)
-    """
+
+<< << << < HEAD
+# print(architecture)
+#print('variant gpu',variant['gpu_id'])
+#assert False
+m = VQVAE(architecture, imsize, n_embeddings,
+          embedding_dim, beta, variant["gpu_id"])
+== == == =
+gpu_id = 0
+# print(architecture)
+m = VQVAE(architecture, imsize, n_embeddings,
+          embedding_dim, beta, gpu_id)
+>>>>>> > 9f2f4fbc9fc8b566eb5a28c136d6f518fc9c8282
+
+m.to(ptu.device)
+"""
     t = ConvVAETrainer(train_data, test_data, m, beta=beta,
                        beta_schedule=beta_schedule, **variant['algo_kwargs'])
     """
-    t = ConvVQVAETrainer(train_data, test_data, m, **variant['algo_kwargs'])
-    #print("started from the nash script now we're here")
-    #assert False
-    save_period = variant['save_period']
-    dump_skew_debug_plots = variant.get('dump_skew_debug_plots', False)
-    for epoch in range(variant['num_epochs']):
+t = ConvVQVAETrainer(train_data, test_data, m, **variant['algo_kwargs'])
+ #print("started from the nash script now we're here")
+ #assert False
+ save_period = variant['save_period']
+  dump_skew_debug_plots = variant.get('dump_skew_debug_plots', False)
+   for epoch in range(variant['num_epochs']):
         should_save_imgs = (epoch % save_period == 0)
         t.train_epoch(epoch)
         t.test_epoch(

@@ -54,6 +54,9 @@ def full_experiment_variant_preprocess(variant):
     skewfit_variant['imsize'] = imsize
     skewfit_variant['init_camera'] = init_camera
 
+    train_vae_variant['gpu_id'] = variant['gpu_id']
+    skewfit_variant['gpu_id'] = variant['gpu_id']
+
 
 def train_vae_and_update_variant(variant):
     from rlkit.core import logger
@@ -142,10 +145,11 @@ def train_vae(variant, return_data=False):
     n_embeddings = 64
     embedding_dim = 2
     beta = 0.25
-    gpu_id = 0
     # print(architecture)
+    #print('variant gpu',variant['gpu_id'])
+    #assert False 
     m = VQVAE(architecture, imsize, n_embeddings,
-              embedding_dim, beta, gpu_id)
+              embedding_dim, beta, variant["gpu_id"])
 
     m.to(ptu.device)
     """

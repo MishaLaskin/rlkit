@@ -104,12 +104,6 @@ class ObsDictRelabelingBuffer(ReplayBuffer):
         next_obs = path["next_observations"]
         terminals = path["terminals"]
         path_len = len(rewards)
-        print('path len', path_len)
-        #print('path keys', path.keys())
-        node_ids = [path["env_infos"][i]["node_id"] for i in range(path_len)]
-        print('NODE IDS')
-        print(node_ids)
-        assert False
 
         actions = flatten_n(actions)
         if isinstance(self.env.action_space, Discrete):

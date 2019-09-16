@@ -7,6 +7,8 @@ from rlkit.data_management.obs_dict_replay_buffer import flatten_dict
 from rlkit.data_management.shared_obs_dict_replay_buffer import \
     SharedObsDictRelabelingBuffer
 from rlkit.envs.vae_wrapper import VAEWrappedEnv
+from vqvae2.routines.vqvae_wrapper import VQVAEWrappedEnv
+
 from rlkit.torch.vae.vae_trainer import (
     compute_p_x_np_to_np,
     relative_probs_from_log_probs,
@@ -43,7 +45,9 @@ class OnlineVaeRelabelingBuffer(SharedObsDictRelabelingBuffer):
             if key not in internal_keys:
                 internal_keys.append(key)
         super().__init__(internal_keys=internal_keys, *args, **kwargs)
-        assert isinstance(self.env, VAEWrappedEnv)
+        assert isinstance(self.env, VAEWrappedEnv) or isinstance(
+            self.env, VQVAEWrappedEnv)
+        self.vae = vae
         self.vae = vae
         self.decoded_obs_key = decoded_obs_key
         self.decoded_desired_goal_key = decoded_desired_goal_key
@@ -56,13 +60,13 @@ class OnlineVaeRelabelingBuffer(SharedObsDictRelabelingBuffer):
         self._relabeling_goal_sampling_mode = relabeling_goal_sampling_mode
 
         self._give_explr_reward_bonus = (
-                exploration_rewards_type != 'None'
-                and exploration_rewards_scale != 0.
+            exploration_rewards_type != 'None'
+            and exploration_rewards_scale != 0.
         )
         self._exploration_rewards = np.zeros((self.max_size, 1))
         self._prioritize_vae_samples = (
-                vae_priority_type != 'None'
-                and power != 0.
+            vae_priority_type != 'None'
+            and power != 0.
         )
         self._vae_sample_priorities = np.zeros((self.max_size, 1))
         self._vae_sample_probs = None
@@ -160,23 +164,25 @@ class OnlineVaeRelabelingBuffer(SharedObsDictRelabelingBuffer):
             self._obs[self.observation_key][idxs] = \
                 self.env._encode(
                     normalize_image(self._obs[self.decoded_obs_key][idxs])
-                )
+            )
             self._next_obs[self.observation_key][idxs] = \
                 self.env._encode(
                     normalize_image(self._next_obs[self.decoded_obs_key][idxs])
-                )
+            )
             # WARNING: we only refresh the desired/achieved latents for
             # "next_obs". This means that obs[desired/achieve] will be invalid,
             # so make sure there's no code that references this.
             # TODO: enforce this with code and not a comment
             self._next_obs[self.desired_goal_key][idxs] = \
                 self.env._encode(
-                    normalize_image(self._next_obs[self.decoded_desired_goal_key][idxs])
-                )
+                    normalize_image(
+                        self._next_obs[self.decoded_desired_goal_key][idxs])
+            )
             self._next_obs[self.achieved_goal_key][idxs] = \
                 self.env._encode(
-                    normalize_image(self._next_obs[self.decoded_achieved_goal_key][idxs])
-                )
+                    normalize_image(
+                        self._next_obs[self.decoded_achieved_goal_key][idxs])
+            )
             normalized_imgs = (
                 normalize_image(self._next_obs[self.decoded_obs_key][idxs])
             )
@@ -203,14 +209,16 @@ class OnlineVaeRelabelingBuffer(SharedObsDictRelabelingBuffer):
                             **self.priority_function_kwargs
                         ).reshape(-1, 1)
                     )
-            obs_sum+= self._obs[self.observation_key][idxs].sum(axis=0)
-            obs_square_sum+= np.power(self._obs[self.observation_key][idxs], 2).sum(axis=0)
+            obs_sum += self._obs[self.observation_key][idxs].sum(axis=0)
+            obs_square_sum += np.power(
+                self._obs[self.observation_key][idxs], 2).sum(axis=0)
 
             cur_idx = next_idx
             next_idx += batch_size
             next_idx = min(next_idx, self._size)
         self.vae.dist_mu = obs_sum/self._size
-        self.vae.dist_std = np.sqrt(obs_square_sum/self._size - np.power(self.vae.dist_mu, 2))
+        self.vae.dist_std = np.sqrt(
+            obs_square_sum/self._size - np.power(self.vae.dist_mu, 2))
 
         if self._prioritize_vae_samples:
             """

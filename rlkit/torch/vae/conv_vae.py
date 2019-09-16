@@ -15,6 +15,8 @@ imsize48_default_architecture = dict(
         kernel_sizes=[5, 3, 3],
         n_channels=[16, 32, 64],
         strides=[3, 2, 2],
+        res_h_dim=32,
+        n_res_layers=3,
     ),
     conv_kwargs=dict(
         hidden_sizes=[],
@@ -35,10 +37,15 @@ imsize48_default_architecture = dict(
         kernel_sizes=[3, 3],
         n_channels=[32, 16],
         strides=[2, 2],
+        res_h_dim=32,
+        n_res_layers=3,
     ),
     deconv_kwargs=dict(
         batch_norm_deconv=False,
         batch_norm_fc=False,
+    ),
+    pixelcnn_kwargs=dict(
+        n_layers=5,
     )
 )
 
@@ -169,8 +176,8 @@ class ConvVAE(GaussianLatentVAE):
             architecture['conv_args'], architecture['conv_kwargs'], \
             architecture['deconv_args'], architecture['deconv_kwargs']
         conv_output_size = deconv_args['deconv_input_width'] * \
-                           deconv_args['deconv_input_height'] * \
-                           deconv_args['deconv_input_channels']
+            deconv_args['deconv_input_height'] * \
+            deconv_args['deconv_input_channels']
 
         self.encoder = encoder_class(
             **conv_args,
@@ -197,7 +204,8 @@ class ConvVAE(GaussianLatentVAE):
             fc_input_size=representation_size,
             init_w=init_w,
             output_activation=decoder_output_activation,
-            paddings=np.zeros(len(deconv_args['kernel_sizes']), dtype=np.int64),
+            paddings=np.zeros(
+                len(deconv_args['kernel_sizes']), dtype=np.int64),
             hidden_init=hidden_init,
             **deconv_kwargs)
 

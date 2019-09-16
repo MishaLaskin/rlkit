@@ -63,7 +63,7 @@ if __name__ == "__main__":
                     decoder_distribution='gaussian_identity_variance',
                     num_latents_to_sample=10,
                 ),
-                power=-1,
+                power=0,  # -1,
                 relabeling_goal_sampling_mode='vae_prior',
             ),
             exploration_goal_sampling_mode='vae_prior',
@@ -112,9 +112,9 @@ if __name__ == "__main__":
                 lr=1e-3,
                 skew_config=dict(
                     method='vae_prob',
-                    power=-1,
+                    power=0,  # -1,
                 ),
-                skew_dataset=True,
+                skew_dataset=False,  # True,
                 priority_function_kwargs=dict(
                     decoder_distribution='gaussian_identity_variance',
                     sampling_method='importance_sampling',
@@ -136,7 +136,17 @@ if __name__ == "__main__":
     exp_prefix = 'dev-{}'.format(
         __file__.replace('/', '-').replace('_', '-').split('.')[0]
     )
+    for exp_id, variant in enumerate(sweeper.iterate_hyperparameters()):
+        for _ in range(n_seeds):
+            run_experiment(
+                skewfit_full_experiment,
+                exp_prefix=exp_prefix,
+                mode=mode,
+                variant=variant,
+                use_gpu=True,
+            )
 
+    """
     n_seeds = 3
     mode = 'ec2'
     exp_prefix = 'rlkit-skew-fit-pusher-reference-sample-from-true-prior-take2'
@@ -159,3 +169,4 @@ if __name__ == "__main__":
                     )
                 )
           )
+    """

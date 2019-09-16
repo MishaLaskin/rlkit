@@ -99,6 +99,7 @@ class GaussianLatentVAE(VAEBase):
         stds = (0.5 * logvar).exp()
         epsilon = ptu.randn(*mu.size())
         latents = epsilon * stds + mu
+
         return latents
 
     def reparameterize(self, latent_distribution_params):
@@ -128,4 +129,3 @@ def compute_gaussian_log_prob(input, dec_mu, dec_var):
     log_probs = decoder_dist.log_prob(input)
     vals = log_probs.sum(dim=1, keepdim=True)
     return vals.mean()
-

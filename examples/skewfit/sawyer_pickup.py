@@ -44,7 +44,7 @@ if __name__ == "__main__":
             ),
             max_path_length=50,
             algo_kwargs=dict(
-                batch_size=1024,
+                batch_size=256,
                 num_epochs=750,
                 num_eval_steps_per_epoch=500,
                 num_expl_steps_per_train_loop=500,
@@ -74,7 +74,7 @@ if __name__ == "__main__":
                     decoder_distribution='gaussian_identity_variance',
                     num_latents_to_sample=10,
                 ),
-                power=-1,
+                power=0,
                 relabeling_goal_sampling_mode='custom_goal_sampler',
             ),
             exploration_goal_sampling_mode='custom_goal_sampler',

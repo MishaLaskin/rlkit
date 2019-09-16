@@ -97,10 +97,6 @@ def train_vae(variant, return_data=False):
     )
     import rlkit.torch.vae.conv_vae as conv_vae
     from rlkit.torch.vae.vae_trainer import ConvVAETrainer
-    # for VQ VAE
-    from vqvae2.routines.trainer import ConvVQVAETrainer
-    from vqvae2.models.vqvae import VQVAE
-
     from rlkit.core import logger
     import rlkit.torch.pytorch_util as ptu
     from rlkit.pythonplusplus import identity
@@ -131,30 +127,14 @@ def train_vae(variant, return_data=False):
     variant['vae_kwargs']['architecture'] = architecture
     variant['vae_kwargs']['imsize'] = variant.get('imsize')
 
-    """
     m = ConvVAE(
         representation_size,
         decoder_output_activation=decoder_activation,
         **variant['vae_kwargs']
     )
-    """
-    imsize = 48
-    n_embeddings = 64
-    embedding_dim = 2
-    beta = 0.25
-    gpu_id = 0
-    # print(architecture)
-    m = VQVAE(architecture, imsize, n_embeddings,
-              embedding_dim, beta, gpu_id)
-
     m.to(ptu.device)
-    """
     t = ConvVAETrainer(train_data, test_data, m, beta=beta,
                        beta_schedule=beta_schedule, **variant['algo_kwargs'])
-    """
-    t = ConvVQVAETrainer(train_data, test_data, m, **variant['algo_kwargs'])
-    #print("started from the nash script now we're here")
-    #assert False
     save_period = variant['save_period']
     dump_skew_debug_plots = variant.get('dump_skew_debug_plots', False)
     for epoch in range(variant['num_epochs']):
@@ -282,7 +262,7 @@ def generate_vae_dataset(variant):
                             action, _ = policy.get_action(policy_obs)
                             obs, _, _, _ = env.step(action)
                 elif oracle_dataset_using_set_to_goal:
-                    print('here', i)
+                    print(i)
                     goal = env.sample_goal()
                     env.set_to_goal(goal)
                     obs = env._get_obs()
@@ -321,7 +301,7 @@ def get_envs(variant):
     from multiworld.core.image_env import ImageEnv
     from rlkit.envs.vae_wrapper import VAEWrappedEnv
     from rlkit.util.io import load_local_or_remote_file
-    from vqvae2.routines.vqvae_wrapper import VQVAEWrappedEnv
+
     render = variant.get('render', False)
     vae_path = variant.get("vae_path", None)
     reward_params = variant.get("reward_params", dict())
@@ -359,7 +339,7 @@ def get_envs(variant):
             """
             if presampled_goals_path is None:
                 image_env.non_presampled_goal_img_is_garbage = True
-                vae_env = VQVAEWrappedEnv(
+                vae_env = VAEWrappedEnv(
                     image_env,
                     vae,
                     imsize=image_env.imsize,
@@ -389,7 +369,7 @@ def get_envs(variant):
                 presampled_goals=presampled_goals,
                 **variant.get('image_env_kwargs', {})
             )
-            vae_env = VQVAEWrappedEnv(
+            vae_env = VAEWrappedEnv(
                 image_env,
                 vae,
                 imsize=image_env.imsize,
@@ -402,7 +382,7 @@ def get_envs(variant):
             )
             print("Presampling all goals only")
         else:
-            vae_env = VQVAEWrappedEnv(
+            vae_env = VAEWrappedEnv(
                 image_env,
                 vae,
                 imsize=image_env.imsize,
@@ -470,8 +450,6 @@ def skewfit_experiment(variant):
     from rlkit.torch.networks import FlattenMlp
     from rlkit.torch.sac.policies import TanhGaussianPolicy
     from rlkit.torch.vae.vae_trainer import ConvVAETrainer
-    from vqvae2.routines.trainer import ConvVQVAETrainer
-    from vqvae2.routines.vqvae_wrapper import VQVAEWrappedEnv
 
     skewfit_preprocess_variant(variant)
     env = get_envs(variant)
@@ -529,15 +507,7 @@ def skewfit_experiment(variant):
         achieved_goal_key=achieved_goal_key,
         **variant['replay_buffer_kwargs']
     )
-    """
     vae_trainer = ConvVAETrainer(
-        variant['vae_train_data'],
-        variant['vae_test_data'],
-        env.vae,
-        **variant['online_vae_trainer_kwargs']
-    )
-    """
-    vae_trainer = ConvVQVAETrainer(
         variant['vae_train_data'],
         variant['vae_test_data'],
         env.vae,

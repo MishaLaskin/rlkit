@@ -36,7 +36,8 @@ CODE_DIRS_TO_MOUNT = [
     # '/home/user/python/module/one', Add more paths as needed
 ]
 
-HOME = os.getenv('HOME') if os.getenv('HOME') is not None else os.getenv("USERPROFILE")
+HOME = os.getenv('HOME') if os.getenv(
+    'HOME') is not None else os.getenv("USERPROFILE")
 
 DIR_AND_MOUNT_POINT_MAPPINGS = [
     dict(
@@ -52,7 +53,7 @@ RUN_DOODAD_EXPERIMENT_SCRIPT_PATH = (
 AWS Settings
 """
 # If not set, default will be chosen by doodad
-# AWS_S3_PATH = 's3://bucket/directory
+AWS_S3_PATH = 's3://bucket/directory'
 
 # The docker image is looked up on dockerhub.com.
 DOODAD_DOCKER_IMAGE = "TODO"

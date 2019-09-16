@@ -29,6 +29,7 @@ def relative_probs_from_log_probs(log_probs):
     assert not np.any(probs <= 0), 'choose a smaller power'
     return probs
 
+
 def compute_log_p_log_q_log_d(
     model,
     data,
@@ -62,7 +63,8 @@ def compute_log_p_log_q_log_d(
         log_q_z_given_x = vae_dist.log_prob(latents).sum(dim=1)
         if decoder_distribution == 'bernoulli':
             decoded = model.decode(latents)[0]
-            log_d_x_given_z = torch.log(imgs * decoded + (1 - imgs) * (1 - decoded) + 1e-8).sum(dim=1)
+            log_d_x_given_z = torch.log(
+                imgs * decoded + (1 - imgs) * (1 - decoded) + 1e-8).sum(dim=1)
         elif decoder_distribution == 'gaussian_identity_variance':
             _, obs_distribution_params = model.decode(latents)
             dec_mu, dec_logvar = obs_distribution_params
@@ -77,6 +79,7 @@ def compute_log_p_log_q_log_d(
         log_d[:, i] = log_d_x_given_z
     return log_p, log_q, log_d
 
+
 def compute_p_x_np_to_np(
     model,
     data,
@@ -86,7 +89,8 @@ def compute_p_x_np_to_np(
     sampling_method='importance_sampling'
 ):
     assert data.dtype == np.float64, 'images should be normalized'
-    assert power >= -1 and power <= 0, 'power for skew-fit should belong to [-1, 0]'
+    assert power >= - \
+        1 and power <= 0, 'power for skew-fit should belong to [-1, 0]'
 
     log_p, log_q, log_d = compute_log_p_log_q_log_d(
         model,
@@ -151,16 +155,17 @@ class ConvVAETrainer(object):
         model.to(ptu.device)
 
         self.model = model
-        self.representation_size = model.representation_size
+        if hasattr(model, 'representation_size'):
+            self.representation_size = model.representation_size
         self.input_channels = model.input_channels
         self.imlength = model.imlength
 
         self.lr = lr
         params = list(self.model.parameters())
         self.optimizer = optim.Adam(params,
-            lr=self.lr,
-            weight_decay=weight_decay,
-        )
+                                    lr=self.lr,
+                                    weight_decay=weight_decay,
+                                    )
         self.train_dataset, self.test_dataset = train_dataset, test_dataset
         assert self.train_dataset.dtype == np.uint8
         assert self.test_dataset.dtype == np.uint8
@@ -244,7 +249,8 @@ class ConvVAETrainer(object):
             if self.use_parallel_dataloading:
                 self.train_dataloader = DataLoader(
                     self.train_dataset_pt,
-                    sampler=InfiniteWeightedRandomSampler(self.train_dataset, self._train_weights),
+                    sampler=InfiniteWeightedRandomSampler(
+                        self.train_dataset, self._train_weights),
                     batch_size=self.batch_size,
                     drop_last=False,
                     num_workers=self.train_data_workers,
@@ -265,9 +271,11 @@ class ConvVAETrainer(object):
             data = self.train_dataset[idxs, :]
             if method == 'vae_prob':
                 data = normalize_image(data)
-                weights[idxs] = compute_p_x_np_to_np(self.model, data, power=power, **self.priority_function_kwargs)
+                weights[idxs] = compute_p_x_np_to_np(
+                    self.model, data, power=power, **self.priority_function_kwargs)
             else:
-                raise NotImplementedError('Method {} not supported'.format(method))
+                raise NotImplementedError(
+                    'Method {} not supported'.format(method))
             cur_idx = next_idx
             next_idx += batch_size
             next_idx = min(next_idx, size)
@@ -335,11 +343,13 @@ class ConvVAETrainer(object):
                 obs = None
                 actions = None
             self.optimizer.zero_grad()
-            reconstructions, obs_distribution_params, latent_distribution_params = self.model(next_obs)
+            reconstructions, obs_distribution_params, latent_distribution_params = self.model(
+                next_obs)
             log_prob = self.model.logprob(next_obs, obs_distribution_params)
             kle = self.model.kl_divergence(latent_distribution_params)
 
-            encoder_mean = self.model.get_encoding_from_latent_distribution_params(latent_distribution_params)
+            encoder_mean = self.model.get_encoding_from_latent_distribution_params(
+                latent_distribution_params)
             z_data = ptu.get_numpy(encoder_mean.cpu())
             for i in range(len(z_data)):
                 zs.append(z_data[i, :])
@@ -387,7 +397,8 @@ class ConvVAETrainer(object):
         beta = float(self.beta_schedule.get_value(epoch))
         for batch_idx in range(10):
             next_obs = self.get_batch(train=False)
-            reconstructions, obs_distribution_params, latent_distribution_params = self.model(next_obs)
+            reconstructions, obs_distribution_params, latent_distribution_params = self.model(
+                next_obs)
             log_prob = self.model.logprob(next_obs, obs_distribution_params)
             kle = self.model.kl_divergence(latent_distribution_params)
             loss = -1 * log_prob + beta * kle
@@ -404,7 +415,7 @@ class ConvVAETrainer(object):
                 n = min(next_obs.size(0), 8)
                 comparison = torch.cat([
                     next_obs[:n].narrow(start=0, length=self.imlength, dim=1)
-                        .contiguous().view(
+                    .contiguous().view(
                         -1, self.input_channels, self.imsize, self.imsize
                     ).transpose(2, 3),
                     reconstructions.view(
@@ -478,7 +489,8 @@ class ConvVAETrainer(object):
         sample = self.model.decode(sample)[0].cpu()
         save_dir = osp.join(logger.get_snapshot_dir(), 's%d.png' % epoch)
         save_image(
-            sample.data.view(64, self.input_channels, self.imsize, self.imsize).transpose(2, 3),
+            sample.data.view(64, self.input_channels,
+                             self.imsize, self.imsize).transpose(2, 3),
             save_dir
         )
 
@@ -490,8 +502,10 @@ class ConvVAETrainer(object):
             img_torch = ptu.from_numpy(normalize_image(img_np))
             recon, *_ = self.model(img_torch.view(1, -1))
 
-            img = img_torch.view(self.input_channels, self.imsize, self.imsize).transpose(1, 2)
-            rimg = recon.view(self.input_channels, self.imsize, self.imsize).transpose(1, 2)
+            img = img_torch.view(self.input_channels,
+                                 self.imsize, self.imsize).transpose(1, 2)
+            rimg = recon.view(self.input_channels, self.imsize,
+                              self.imsize).transpose(1, 2)
             imgs.append(img)
             recons.append(rimg)
         all_imgs = torch.stack(imgs + recons)
@@ -510,33 +524,42 @@ class ConvVAETrainer(object):
         kles = []
         mses = []
         for i in range(0, data.shape[0], self.batch_size):
-            img = normalize_image(data[i:min(data.shape[0], i + self.batch_size), :])
+            img = normalize_image(
+                data[i:min(data.shape[0], i + self.batch_size), :])
             torch_img = ptu.from_numpy(img)
-            reconstructions, obs_distribution_params, latent_distribution_params = self.model(torch_img)
+            reconstructions, obs_distribution_params, latent_distribution_params = self.model(
+                torch_img)
 
             priority_function_kwargs['sampling_method'] = 'true_prior_sampling'
-            log_p, log_q, log_d = compute_log_p_log_q_log_d(model, img, **priority_function_kwargs)
+            log_p, log_q, log_d = compute_log_p_log_q_log_d(
+                model, img, **priority_function_kwargs)
             log_prob_prior = log_d.mean()
 
             priority_function_kwargs['sampling_method'] = 'biased_sampling'
-            log_p, log_q, log_d = compute_log_p_log_q_log_d(model, img, **priority_function_kwargs)
+            log_p, log_q, log_d = compute_log_p_log_q_log_d(
+                model, img, **priority_function_kwargs)
             log_prob_biased = log_d.mean()
 
             priority_function_kwargs['sampling_method'] = 'importance_sampling'
-            log_p, log_q, log_d = compute_log_p_log_q_log_d(model, img, **priority_function_kwargs)
+            log_p, log_q, log_d = compute_log_p_log_q_log_d(
+                model, img, **priority_function_kwargs)
             log_prob_importance = (log_p - log_q + log_d).mean()
 
             kle = model.kl_divergence(latent_distribution_params)
-            mse = F.mse_loss(torch_img, reconstructions, reduction='elementwise_mean')
+            mse = F.mse_loss(torch_img, reconstructions,
+                             reduction='elementwise_mean')
             mses.append(mse.item())
             kles.append(kle.item())
             log_probs_prior.append(log_prob_prior.item())
             log_probs_biased.append(log_prob_biased.item())
             log_probs_importance.append(log_prob_importance.item())
 
-        logger.record_tabular("Uniform Data Log Prob (True Prior)", np.mean(log_probs_prior))
-        logger.record_tabular("Uniform Data Log Prob (Biased)", np.mean(log_probs_biased))
-        logger.record_tabular("Uniform Data Log Prob (Importance)", np.mean(log_probs_importance))
+        logger.record_tabular(
+            "Uniform Data Log Prob (True Prior)", np.mean(log_probs_prior))
+        logger.record_tabular(
+            "Uniform Data Log Prob (Biased)", np.mean(log_probs_biased))
+        logger.record_tabular(
+            "Uniform Data Log Prob (Importance)", np.mean(log_probs_importance))
         logger.record_tabular("Uniform Data KL", np.mean(kles))
         logger.record_tabular("Uniform Data MSE", np.mean(mses))
 
@@ -550,8 +573,10 @@ class ConvVAETrainer(object):
             img_torch = ptu.from_numpy(normalize_image(img_np))
             recon, *_ = self.model(img_torch.view(1, -1))
 
-            img = img_torch.view(self.input_channels, self.imsize, self.imsize).transpose(1, 2)
-            rimg = recon.view(self.input_channels, self.imsize, self.imsize).transpose(1, 2)
+            img = img_torch.view(self.input_channels,
+                                 self.imsize, self.imsize).transpose(1, 2)
+            rimg = recon.view(self.input_channels, self.imsize,
+                              self.imsize).transpose(1, 2)
             imgs.append(img)
             recons.append(rimg)
         all_imgs = torch.stack(imgs + recons)

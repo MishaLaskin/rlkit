@@ -104,8 +104,6 @@ class ObsDictRelabelingBuffer(ReplayBuffer):
         next_obs = path["next_observations"]
         terminals = path["terminals"]
         path_len = len(rewards)
-     
-
         actions = flatten_n(actions)
         if isinstance(self.env.action_space, Discrete):
             actions = np.eye(self._action_dim)[

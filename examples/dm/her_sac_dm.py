@@ -51,31 +51,7 @@ def experiment(variant):
                              threshold=0.1, max_steps=variant['algo_kwargs']['max_path_length'])
 
 
-    eval_env = StackerLatentGoalEnv(obs_dim=128,
-                                    goal_dim=128,
-                                    env_name='stacker',
-                                    task='pick_and_place',
-                                    max_steps=variant['algo_kwargs']['max_path_length'],
-                                    reward_type='pick_and_place_sparse',
-                                    threshold=0.08,
-                                    render_kwargs=dict(
-                                        width=64, height=64, camera_id=0),
-                                    gpu_id=0,
-                                    easy_reset=False)
 
-    expl_env = StackerLatentGoalEnv(obs_dim=128,
-                                    goal_dim=128,
-                                    env_name='stacker',
-                                    task='pick_and_place',
-                                    max_steps=variant['algo_kwargs']['max_path_length'],
-                                    reward_type='pick_and_place_sparse',
-                                    threshold=0.08,
-                                    render_kwargs=dict(
-                                        width=64, height=64, camera_id=0),
-                                    gpu_id=0,
-                                    easy_reset=False)
-
-    
 
     eval_env = GoalReacherNoTargetVQVAE(
         obs_dim=128,
@@ -90,6 +66,7 @@ def experiment(variant):
         max_steps=variant['algo_kwargs']['max_path_length'],
         threshold=0.15,
         explore=False)
+
 
     expl_env = GoalReacherNoTargetVQVAE(
         obs_dim=128,
@@ -130,6 +107,31 @@ def experiment(variant):
                              gpu_id=variant['gpu_id'],
                              max_steps=variant['algo_kwargs']['max_path_length'])
 
+    """
+    eval_env = StackerLatentGoalEnv(obs_dim=128,
+                                    goal_dim=128,
+                                    env_name='stacker',
+                                    task='just_place',
+                                    max_steps=variant['algo_kwargs']['max_path_length'],
+                                    reward_type='place_sparse',
+                                    threshold=0.08,
+                                    render_kwargs=dict(
+                                        width=64, height=64, camera_id=0),
+                                    gpu_id=0,
+                                    easy_reset=False)
+
+    expl_env = StackerLatentGoalEnv(obs_dim=128,
+                                    goal_dim=128,
+                                    env_name='stacker',
+                                    task='just_place',
+                                    max_steps=variant['algo_kwargs']['max_path_length'],
+                                    reward_type='place_sparse',
+                                    threshold=0.08,
+                                    render_kwargs=dict(
+                                        width=64, height=64, camera_id=0),
+                                    gpu_id=0,
+                                    easy_reset=False)
+    """
     observation_key = 'observation'
     # ground truth goals
     desired_goal_key = 'desired_goal'
@@ -221,7 +223,7 @@ if __name__ == "__main__":
             num_expl_steps_per_train_loop=1000,
             num_trains_per_train_loop=1000,
             min_num_steps_before_training=1000,
-            max_path_length=500,
+            max_path_length=200,
         ),
         sac_trainer_kwargs=dict(
             discount=0.99,
@@ -234,7 +236,7 @@ if __name__ == "__main__":
         ),
         replay_buffer_kwargs=dict(
             max_size=int(1E6),
-            fraction_goals_rollout_goals=1.,
+            fraction_goals_rollout_goals=.2,
             fraction_goals_env_goals=0,
         ),
         qf_kwargs=dict(

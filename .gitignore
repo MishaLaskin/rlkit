@@ -7,5 +7,9 @@ rlkit/launchers/conf_private.py
 MANIFEST
 *.egg-info
 \.idea/
+<<<<<<< HEAD
 data/*
 nohup*
+=======
+data/*
+>>>>>>> 9f2f4fbc9fc8b566eb5a28c136d6f518fc9c8282

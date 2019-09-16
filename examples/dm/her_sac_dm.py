@@ -53,6 +53,7 @@ def experiment(variant):
 
 
 
+
     eval_env = GoalReacherNoTargetVQVAE(
         obs_dim=128,
         goal_dim=128,
@@ -132,6 +133,7 @@ def experiment(variant):
                                     gpu_id=0,
                                     easy_reset=False)
     """
+
     observation_key = 'observation'
     # ground truth goals
     desired_goal_key = 'desired_goal'
@@ -215,7 +217,7 @@ if __name__ == "__main__":
         env_name='pushblock2',
         title='sep2',
         save=True,
-        gpu_id=7,
+        gpu_id=7, 
         algo_kwargs=dict(
             batch_size=128,
             num_epochs=20000,
@@ -255,4 +257,5 @@ if __name__ == "__main__":
         setup_logger(name, variant=variant)
     # optionally set the GPU (default=False)
     ptu.set_gpu_mode(True, gpu_id=variant['gpu_id'])
+
     experiment(variant)

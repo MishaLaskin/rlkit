@@ -2,7 +2,7 @@ import rlkit.util.hyperparameter as hyp
 from multiworld.envs.mujoco.cameras import sawyer_init_camera_zoomed_in
 from rlkit.launchers.launcher_util import run_experiment
 import rlkit.torch.vae.vae_schedules as vae_schedules
-from rlkit.launchers.skewfit_experiments import skewfit_full_experiment
+from rlkit.launchers.og_skewfit_experiments import skewfit_full_experiment
 from rlkit.torch.vae.conv_vae import imsize48_default_architecture
 
 
@@ -12,6 +12,7 @@ if __name__ == "__main__":
         double_algo=False,
         online_vae_exploration=False,
         imsize=48,
+        gpu_id=0,
         init_camera=sawyer_init_camera_zoomed_in,
         env_id='SawyerPushNIPSEasy-v0',
         skewfit_variant=dict(
@@ -86,7 +87,7 @@ if __name__ == "__main__":
         train_vae_variant=dict(
             representation_size=4,
             beta=20,
-            num_epochs=0,
+            num_epochs=100,
             dump_skew_debug_plots=False,
             decoder_activation='gaussian',
             generate_vae_dataset_kwargs=dict(
@@ -123,7 +124,7 @@ if __name__ == "__main__":
                 use_parallel_dataloading=False,
             ),
 
-            save_period=25,
+            save_period=10,
         ),
     )
     search_space = {}

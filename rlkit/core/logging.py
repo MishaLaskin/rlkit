@@ -285,8 +285,11 @@ class Logger(object):
                 pickle.dump(params, open(file_name, "wb"))
             elif self._snapshot_mode == 'last':
                 # override previous params
-                del params['exploration/env']
-                del params['evaluation/env']
+                try:
+                    del params['exploration/env']
+                    del params['evaluation/env']
+                except:
+                    pass
                 file_name = osp.join(self._snapshot_dir, 'params.pkl')
                 pickle.dump(params, open(file_name, "wb"))
             elif self._snapshot_mode == "gap":

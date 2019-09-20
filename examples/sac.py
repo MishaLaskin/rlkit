@@ -9,11 +9,16 @@ from rlkit.torch.sac.policies import TanhGaussianPolicy, MakeDeterministic
 from rlkit.torch.sac.sac import SACTrainer
 from rlkit.torch.networks import FlattenMlp
 from rlkit.torch.torch_rl_algorithm import TorchBatchRLAlgorithm
+import gym
 
 
 def experiment(variant):
-    expl_env = NormalizedBoxEnv(HalfCheetahEnv())
-    eval_env = NormalizedBoxEnv(HalfCheetahEnv())
+    import multiworld
+    multiworld.register_all_envs()
+    # NormalizedBoxEnv(HalfCheetahEnv())
+    expl_env = gym.make("SawyerPickupEnvYZEasy-v0")
+    # NormalizedBoxEnv(HalfCheetahEnv())
+    eval_env = gym.make("SawyerPickupEnvYZEasy-v0")
     obs_dim = expl_env.observation_space.low.size
     action_dim = eval_env.action_space.low.size
 
@@ -76,8 +81,6 @@ def experiment(variant):
     )
     algorithm.to(ptu.device)
     algorithm.train()
-
-
 
 
 if __name__ == "__main__":

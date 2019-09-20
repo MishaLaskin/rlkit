@@ -15,8 +15,8 @@ imsize48_default_architecture = dict(
         kernel_sizes=[5, 3, 3],
         n_channels=[16, 32, 64],
         strides=[3, 2, 2],
-        # res_h_dim=32,
-        # n_res_layers=3,
+        res_h_dim=32,
+        n_res_layers=3,
     ),
     conv_kwargs=dict(
         hidden_sizes=[],
@@ -37,8 +37,8 @@ imsize48_default_architecture = dict(
         kernel_sizes=[3, 3],
         n_channels=[32, 16],
         strides=[2, 2],
-        # res_h_dim=32,
-        # n_res_layers=3,
+        res_h_dim=32,
+        n_res_layers=3,
     ),
     deconv_kwargs=dict(
         batch_norm_deconv=False,

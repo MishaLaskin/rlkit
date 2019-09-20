@@ -26,8 +26,8 @@ from rlkit.torch.torch_rl_algorithm import TorchBatchRLAlgorithm
 def experiment(variant):
     import multiworld
     multiworld.register_all_envs()
-    eval_env = gym.make('SawyerReachXYZEnv-v0')
-    expl_env = gym.make('SawyerReachXYZEnv-v0')
+    eval_env = gym.make("SawyerPickupEnvYZEasy-v0")
+    expl_env = gym.make("SawyerPickupEnvYZEasy-v0")
     observation_key = 'state_observation'
     desired_goal_key = 'state_desired_goal'
     achieved_goal_key = desired_goal_key.replace("desired", "achieved")
@@ -119,7 +119,7 @@ def experiment(variant):
 if __name__ == "__main__":
     variant = dict(
         algo_kwargs=dict(
-            num_epochs=100,
+            num_epochs=500,
             max_path_length=50,
             batch_size=128,
             num_eval_steps_per_epoch=1000,
@@ -141,6 +141,6 @@ if __name__ == "__main__":
             hidden_sizes=[400, 300],
         ),
     )
-    ptu.set_gpu_mode(True,gpu_id=4)  # optionally set the GPU (default=False)
+    ptu.set_gpu_mode(True, gpu_id=0)  # optionally set the GPU (default=False)
     setup_logger('her-td3-sawyer-hand-success', variant=variant)
     experiment(variant)

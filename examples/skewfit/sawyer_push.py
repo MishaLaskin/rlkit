@@ -2,7 +2,7 @@ import rlkit.util.hyperparameter as hyp
 from multiworld.envs.mujoco.cameras import sawyer_init_camera_zoomed_in
 from rlkit.launchers.launcher_util import run_experiment
 import rlkit.torch.vae.vae_schedules as vae_schedules
-from rlkit.launchers.og_skewfit_experiments import skewfit_full_experiment
+from rlkit.launchers.skewfit_experiments import skewfit_full_experiment
 from rlkit.torch.vae.conv_vae import imsize48_default_architecture
 
 
@@ -56,7 +56,7 @@ if __name__ == "__main__":
                 start_skew_epoch=10,
                 max_size=int(100000),
                 fraction_goals_rollout_goals=0.2,
-                fraction_goals_env_goals=0.5,
+                fraction_goals_env_goals=.8,
                 exploration_rewards_type='None',
                 vae_priority_type='vae_prob',
                 priority_function_kwargs=dict(

@@ -16,6 +16,7 @@ if __name__ == "__main__":
         online_vae_exploration=False,
         imsize=48,
         gpu_id=0,
+        name='eps2',
         env_id='SawyerDoorHookResetFreeEnv-v1',
         init_camera=sawyer_door_env_camera_v0,
         skewfit_variant=dict(
@@ -46,7 +47,7 @@ if __name__ == "__main__":
                 num_eval_steps_per_epoch=500,
                 num_expl_steps_per_train_loop=500,
                 num_trains_per_train_loop=1000,
-                min_num_steps_before_training=10000,
+                min_num_steps_before_training=1000,
                 vae_training_schedule=vae_schedules.custom_schedule,
                 oracle_data=False,
                 vae_save_period=50,
@@ -72,7 +73,8 @@ if __name__ == "__main__":
             training_mode='train',
             testing_mode='test',
             reward_params=dict(
-                type='latent_distance',
+                type='latent_sparse',
+                epsilin=1,
             ),
             observation_key='latent_observation',
             desired_goal_key='latent_desired_goal',
@@ -89,7 +91,7 @@ if __name__ == "__main__":
         train_vae_variant=dict(
             representation_size=16,
             beta=20,
-            num_epochs=100,
+            num_epochs=0,
             dump_skew_debug_plots=False,
             decoder_activation='gaussian',
             generate_vae_dataset_kwargs=dict(
@@ -109,7 +111,7 @@ if __name__ == "__main__":
             algo_kwargs=dict(
                 lr=1e-3,
             ),
-            save_period=1,
+            save_period=20,
         ),
     )
 
@@ -121,7 +123,7 @@ if __name__ == "__main__":
 
     n_seeds = 1
     mode = 'local'
-    exp_prefix = 'dev-{}'.format(
+    exp_prefix = variant['name'] + '-' + 'dev-{}'.format(
         __file__.replace('/', '-').replace('_', '-').split('.')[0]
     )
 

@@ -45,7 +45,7 @@ imsize48_default_architecture = dict(
         batch_norm_fc=False,
     ),
     pixelcnn_kwargs=dict(
-        n_layers=15,
+        n_layers=5,
     )
 )
 

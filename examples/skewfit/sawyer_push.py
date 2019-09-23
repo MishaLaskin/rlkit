@@ -14,7 +14,7 @@ if __name__ == "__main__":
         imsize=48,
         gpu_id=0,
         init_camera=sawyer_init_camera_zoomed_in,
-        env_id='SawyerPushNIPSEasy-v0',
+        env_id='SawyerPushNIPSHarder-v0',
         skewfit_variant=dict(
             save_video=True,
             custom_goal_sampler='replay_buffer',
@@ -35,7 +35,7 @@ if __name__ == "__main__":
             max_path_length=50,
             algo_kwargs=dict(
                 batch_size=1024,
-                num_epochs=1000,
+                num_epochs=2000,
                 num_eval_steps_per_epoch=500,
                 num_expl_steps_per_train_loop=500,
                 num_trains_per_train_loop=1000,
@@ -56,7 +56,7 @@ if __name__ == "__main__":
                 start_skew_epoch=10,
                 max_size=int(100000),
                 fraction_goals_rollout_goals=0.2,
-                fraction_goals_env_goals=.8,
+                fraction_goals_env_goals=.4,
                 exploration_rewards_type='None',
                 vae_priority_type='vae_prob',
                 priority_function_kwargs=dict(
@@ -76,7 +76,7 @@ if __name__ == "__main__":
             training_mode='train',
             testing_mode='test',
             reward_params=dict(
-                type='latent_distance',
+                type='latent_sparse',
             ),
             observation_key='latent_observation',
             desired_goal_key='latent_desired_goal',
@@ -134,7 +134,8 @@ if __name__ == "__main__":
 
     n_seeds = 1
     mode = 'local'
-    exp_prefix = 'dev-{}'.format(
+    prefix = 'sparse'
+    exp_prefix = prefix + '-'+'dev-{}'.format(
         __file__.replace('/', '-').replace('_', '-').split('.')[0]
     )
     for exp_id, variant in enumerate(sweeper.iterate_hyperparameters()):

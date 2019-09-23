@@ -12,13 +12,21 @@ from rlkit.launchers.launcher_util import run_experiment
 from rlkit.launchers.skewfit_experiments import skewfit_full_experiment
 from rlkit.torch.vae.conv_vae import imsize48_default_architecture
 
+config  = dict(
+    gpu_id=3,
+    name='bp10',
+    epsilon=10,
+    reward_type='latent_sparse',
+    vae_num_epochs=20
+)
 if __name__ == "__main__":
     num_images = 1
     variant = dict(
         algorithm='Skew-Fit',
         imsize=48,
         double_algo=False,
-        gpu_id=0,
+        gpu_id=config['gpu_id'],
+        name=config['name'],
         env_id="SawyerPickupEnvYZEasy-v0",
         skewfit_variant=dict(
             sample_goals_from_buffer=True,
@@ -50,7 +58,7 @@ if __name__ == "__main__":
                 num_eval_steps_per_epoch=500,
                 num_expl_steps_per_train_loop=500,
                 num_trains_per_train_loop=1000,
-                min_num_steps_before_training=10000,
+                min_num_steps_before_training=5000,
                 vae_training_schedule=vae_schedules.custom_schedule,
                 oracle_data=False,
                 vae_save_period=50,
@@ -87,7 +95,8 @@ if __name__ == "__main__":
             training_mode='train',
             testing_mode='test',
             reward_params=dict(
-                type='latent_distance',
+                type=config['reward_type'],
+                epsilon=config['epsilon'],
             ),
             observation_key='latent_observation',
             desired_goal_key='latent_desired_goal',
@@ -98,7 +107,7 @@ if __name__ == "__main__":
         train_vae_variant=dict(
             representation_size=16,
             beta=5,
-            num_epochs=100,
+            num_epochs=config['vae_num_epochs'],
             dump_skew_debug_plots=True,
             decoder_activation='gaussian',
             vae_kwargs=dict(
@@ -144,7 +153,7 @@ if __name__ == "__main__":
 
     n_seeds = 1
     mode = 'local'
-    exp_prefix = 'dev-{}'.format(
+    exp_prefix = variant['name']+ '-'+'dev-{}'.format(
         __file__.replace('/', '-').replace('_', '-').split('.')[0]
     )
 

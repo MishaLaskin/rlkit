@@ -5,16 +5,23 @@ import rlkit.torch.vae.vae_schedules as vae_schedules
 from rlkit.launchers.skewfit_experiments import skewfit_full_experiment
 from rlkit.torch.vae.conv_vae import imsize48_default_architecture
 
-
+config  = dict(
+    gpu_id=6,
+    name='bpu2',
+    epsilon=2,
+    reward_type='latent_sparse',
+    vae_num_epochs=20
+)
 if __name__ == "__main__":
     variant = dict(
         algorithm='Skew-Fit',
         double_algo=False,
         online_vae_exploration=False,
         imsize=48,
-        gpu_id=0,
+        gpu_id=config['gpu_id'],
+        name=config['name'],
         init_camera=sawyer_init_camera_zoomed_in,
-        env_id='SawyerPushNIPSHarder-v0',
+        env_id='SawyerPushNIPSEasy-v0',
         skewfit_variant=dict(
             save_video=True,
             custom_goal_sampler='replay_buffer',
@@ -35,7 +42,7 @@ if __name__ == "__main__":
             max_path_length=50,
             algo_kwargs=dict(
                 batch_size=1024,
-                num_epochs=2000,
+                num_epochs=1000,
                 num_eval_steps_per_epoch=500,
                 num_expl_steps_per_train_loop=500,
                 num_trains_per_train_loop=1000,
@@ -56,7 +63,7 @@ if __name__ == "__main__":
                 start_skew_epoch=10,
                 max_size=int(100000),
                 fraction_goals_rollout_goals=0.2,
-                fraction_goals_env_goals=.4,
+                fraction_goals_env_goals=.8,
                 exploration_rewards_type='None',
                 vae_priority_type='vae_prob',
                 priority_function_kwargs=dict(
@@ -76,7 +83,8 @@ if __name__ == "__main__":
             training_mode='train',
             testing_mode='test',
             reward_params=dict(
-                type='latent_sparse',
+                type=config['reward_type'],
+                epsilon=config['epsilon'],
             ),
             observation_key='latent_observation',
             desired_goal_key='latent_desired_goal',
@@ -85,9 +93,9 @@ if __name__ == "__main__":
             ),
         ),
         train_vae_variant=dict(
-            representation_size=4,
+            representation_size=18,
             beta=20,
-            num_epochs=100,
+            num_epochs=config['vae_num_epochs'],
             dump_skew_debug_plots=False,
             decoder_activation='gaussian',
             generate_vae_dataset_kwargs=dict(
@@ -134,8 +142,7 @@ if __name__ == "__main__":
 
     n_seeds = 1
     mode = 'local'
-    prefix = 'sparse'
-    exp_prefix = prefix + '-'+'dev-{}'.format(
+    exp_prefix = variant['name']+'-'+'dev-{}'.format(
         __file__.replace('/', '-').replace('_', '-').split('.')[0]
     )
     for exp_id, variant in enumerate(sweeper.iterate_hyperparameters()):

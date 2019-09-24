@@ -4,10 +4,26 @@ import rlkit.util.hyperparameter as hyp
 from multiworld.envs.mujoco.cameras import sawyer_door_env_camera_v0
 from rlkit.launchers.launcher_util import run_experiment
 import rlkit.torch.vae.vae_schedules as vae_schedules
-from rlkit.launchers.skewfit_experiments import \
+from rlkit.launchers.og_skewfit_experiments import \
     skewfit_full_experiment
-from rlkit.torch.vae.conv_vae import imsize48_default_architecture
+from rlkit.torch.vae.conv_vae import imsize48_default_architecture, imsize48_blac_architecture
 import rlkit.torch.pytorch_util as ptu
+
+
+config = dict(
+    gpu_id=0,
+    name='rig_sparse',
+    epsilon=.3,
+    reward_type='latent_sparse',
+    vae_num_epochs=0,
+    fraction_goals_env_goals=0.5,
+    num_epochs=100,
+    lr=1e-3,
+    vae_save_period=10,
+    power=0,
+    min_num_steps_before_training=5000,
+    architecture=imsize48_default_architecture
+)
 
 if __name__ == "__main__":
     variant = dict(
@@ -15,8 +31,8 @@ if __name__ == "__main__":
         double_algo=False,
         online_vae_exploration=False,
         imsize=48,
-        gpu_id=0,
-        name='eps2',
+        gpu_id=config['gpu_id'],
+        name=config['name'],
         env_id='SawyerDoorHookResetFreeEnv-v1',
         init_camera=sawyer_door_env_camera_v0,
         skewfit_variant=dict(
@@ -24,7 +40,7 @@ if __name__ == "__main__":
             custom_goal_sampler='replay_buffer',
             online_vae_trainer_kwargs=dict(
                 beta=20,
-                lr=1e-3,
+                lr=config['lr'],
             ),
             save_video_period=50,
             qf_kwargs=dict(
@@ -43,21 +59,21 @@ if __name__ == "__main__":
             max_path_length=100,
             algo_kwargs=dict(
                 batch_size=256,
-                num_epochs=170,
+                num_epochs=config['num_epochs'],
                 num_eval_steps_per_epoch=500,
                 num_expl_steps_per_train_loop=500,
                 num_trains_per_train_loop=1000,
-                min_num_steps_before_training=1000,
+                min_num_steps_before_training=config['min_num_steps_before_training'],
                 vae_training_schedule=vae_schedules.custom_schedule,
                 oracle_data=False,
-                vae_save_period=50,
+                vae_save_period=config['vae_save_period'],
                 parallel_vae_train=False,
             ),
             replay_buffer_kwargs=dict(
                 start_skew_epoch=10,
                 max_size=int(100000),
                 fraction_goals_rollout_goals=0.2,
-                fraction_goals_env_goals=0.5,
+                fraction_goals_env_goals=config['fraction_goals_env_goals'],
                 exploration_rewards_type='None',
                 vae_priority_type='vae_prob',
                 priority_function_kwargs=dict(
@@ -65,7 +81,7 @@ if __name__ == "__main__":
                     decoder_distribution='gaussian_identity_variance',
                     num_latents_to_sample=10,
                 ),
-                power=0,
+                power=config['power'],
                 relabeling_goal_sampling_mode='custom_goal_sampler',
             ),
             exploration_goal_sampling_mode='custom_goal_sampler',
@@ -73,8 +89,8 @@ if __name__ == "__main__":
             training_mode='train',
             testing_mode='test',
             reward_params=dict(
-                type='latent_sparse',
-                epsilin=1,
+                type=config['reward_type'],
+                epsilon=config['epsilon'],
             ),
             observation_key='latent_observation',
             desired_goal_key='latent_desired_goal',
@@ -91,7 +107,7 @@ if __name__ == "__main__":
         train_vae_variant=dict(
             representation_size=16,
             beta=20,
-            num_epochs=0,
+            num_epochs=config['vae_num_epochs'],
             dump_skew_debug_plots=False,
             decoder_activation='gaussian',
             generate_vae_dataset_kwargs=dict(
@@ -106,7 +122,7 @@ if __name__ == "__main__":
             vae_kwargs=dict(
                 decoder_distribution='gaussian_identity_variance',
                 input_channels=3,
-                architecture=imsize48_default_architecture,
+                architecture=config['architecture'],
             ),
             algo_kwargs=dict(
                 lr=1e-3,
